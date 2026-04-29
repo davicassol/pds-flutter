@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../services/auth_service.dart';
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -13,15 +13,56 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
-  void handleSignUp() {
-    if (passwordController.text != confirmPasswordController.text) {
+  // Variável para controlar o carregamento
+  bool isLoading = false;
+
+  // Transformamos a função em assíncrona
+  void handleSignUp() async {
+    // Verifica se tem algum campo vazio
+    if (nameController.text.isEmpty || emailController.text.isEmpty || passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords don't match")),
+        const SnackBar(content: Text("Por favor, preencha todos os campos")),
       );
       return;
     }
 
-    Navigator.pushNamed(context, '/home');
+    // Verifica as senhas
+    if (passwordController.text != confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("As senhas não coincidem")),
+      );
+      return;
+    }
+
+    //  Ativa o carregamento na tela
+    setState(() {
+      isLoading = true;
+    });
+
+    //  Chama o serviço de autenticação
+    String? erro = await AuthService().signUp(
+      name: nameController.text.trim(),
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+    );
+
+    //  Verifica se a tela ainda está aberta antes de atualizar (boa prática)
+    if (!mounted) return;
+    setState(() {
+      isLoading = false;
+    });
+
+    //  Trata o resultado
+    if (erro == null) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(erro),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   InputDecoration buildInputDecoration(String label, String hint) {
@@ -50,7 +91,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // 🔙 HEADER
+              // HEADER
               Row(
                 children: [
                   IconButton(
@@ -71,7 +112,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               const Spacer(),
 
-              // 🔵 LOGO
+              // LOGO
               Column(
                 children: [
                   Container(
@@ -94,7 +135,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               const SizedBox(height: 24),
 
-              // 📦 CARD
+              //CARD
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -107,68 +148,75 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     )
                   ],
                 ),
-                child: Column(
-                  children: [
-                    // NAME
-                    TextField(
-                      controller: nameController,
-                      decoration:
-                      buildInputDecoration("Full Name", "John Doe"),
-                    ),
-                    const SizedBox(height: 16),
+                child: SingleChildScrollView( // Ajuda em telas menores
+                  child: Column(
+                    children: [
+                      //NAME
+                      TextField(
+                        controller: nameController,
+                        decoration: buildInputDecoration("Full Name", "John Doe"),
+                      ),
+                      const SizedBox(height: 16),
 
-                    // EMAIL
-                    TextField(
-                      controller: emailController,
-                      decoration: buildInputDecoration(
-                          "Email", "your.email@example.com"),
-                    ),
-                    const SizedBox(height: 16),
+                      //EMAIL
+                      TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress, // Mostra o @ no teclado
+                        decoration: buildInputDecoration("Email", "your.email@example.com"),
+                      ),
+                      const SizedBox(height: 16),
 
-                    // PASSWORD
-                    TextField(
-                      controller: passwordController,
-                      obscureText: true,
-                      decoration:
-                      buildInputDecoration("Password", "••••••••"),
-                    ),
-                    const SizedBox(height: 16),
+                      //PASSWORD
+                      TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: buildInputDecoration("Password", "••••••••"),
+                      ),
+                      const SizedBox(height: 16),
 
-                    // CONFIRM PASSWORD
-                    TextField(
-                      controller: confirmPasswordController,
-                      obscureText: true,
-                      decoration: buildInputDecoration(
-                          "Confirm Password", "••••••••"),
-                    ),
+                      //CONFIRM PASSWORD
+                      TextField(
+                        controller: confirmPasswordController,
+                        obscureText: true,
+                        decoration: buildInputDecoration("Confirm Password", "••••••••"),
+                      ),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // BUTTON
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: handleSignUp,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      //BUTTON
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          //Se estiver carregando, desativa o botão
+                          onPressed: isLoading ? null : handleSignUp,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          //Mostra o spinner se estiver carregando, ou o texto se não
+                          child: isLoading
+                              ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                          )
+                              : const Text(
+                            "Create Account",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
                           ),
                         ),
-                        child: const Text(
-                          "Create Account",
-                          style: TextStyle(fontSize: 16),
-                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // 🔗 FOOTER
+              //FOOTER
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -177,7 +225,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     onTap: () => Navigator.pop(context),
                     child: const Text(
                       "Login",
-                      style: TextStyle(color: Colors.blue),
+                      style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,9 +14,46 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  void handleLogin() {
-    // TODO: integrar Firebase Auth
-    Navigator.pushNamed(context, '/home');
+  // Variável para controlar a tela de carregamento e evitar duplo clique
+  bool isLoading = false;
+
+  void handleLogin() async {
+    // Evita que o usuário tente logar com os campos vazios
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Por favor, preencha o e-mail e a senha.")),
+      );
+      return;
+    }
+
+    // Liga a animação de carregamento
+    setState(() {
+      isLoading = true;
+    });
+
+    // Pede para o serviço validar as credenciais lá no Google
+    String? erro = await AuthService().signIn(
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    //  Desliga o carregamento
+    setState(() {
+      isLoading = false;
+    });
+
+    if (erro == null) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(erro),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -35,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // 🔵 LOGO + HEADER
+                  // LOGO + HEADER
                   Column(
                     children: [
                       Container(
@@ -70,13 +108,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 32),
 
-                  // 📦 CARD
+                  // CARD
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           blurRadius: 10,
                           color: Colors.black12,
@@ -100,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 12),
 
-                        // 🔗 Forgot password
+                        // Forgot password
                         Align(
                           alignment: Alignment.centerLeft,
                           child: GestureDetector(
@@ -116,9 +154,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        PrimaryButton(
-                          text: "Login",
-                          onPressed: handleLogin,
+                        // BOTÃO INTELIGENTE
+                        // Se isLoading for true, mostra a bolinha girando. Se false, mostra o seu botão original.
+                        isLoading
+                            ? const CircularProgressIndicator(color: Colors.blue)
+                            : SizedBox(
+                          width: double.infinity,
+                          child: PrimaryButton(
+                            text: "Login",
+                            onPressed: handleLogin,
+                          ),
                         ),
                       ],
                     ),
@@ -126,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 16),
 
-                  // 🔗 SIGN UP
+                  // SIGN UP
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -137,7 +182,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         child: const Text(
                           "Create Account",
-                          style: TextStyle(color: Colors.blue),
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -145,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 24),
 
-                  // 🌧️ ILUSTRAÇÃO
+                  // 🌧ILUSTRAÇÃO
                   const Icon(
                     Icons.cloud,
                     size: 100,

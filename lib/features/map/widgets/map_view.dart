@@ -1,46 +1,89 @@
 import 'package:flutter/material.dart';
-import 'flood_marker.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart'; // <--- Importante para o GPS
 import 'legend_widget.dart';
 
-class MapView extends StatelessWidget {
+class MapView extends StatefulWidget {
   const MapView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final floodedAreas = [
-      {"color": Colors.red, "top": 0.45, "left": 0.52},
-      {"color": Colors.red, "top": 0.38, "left": 0.48},
-      {"color": Colors.orange, "top": 0.55, "left": 0.45},
-      {"color": Colors.orange, "top": 0.32, "left": 0.58},
-    ];
+  State<MapView> createState() => _MapViewState();
+}
 
+class _MapViewState extends State<MapView> {
+  late GoogleMapController mapController;
+
+  // Torres continua aqui apenas como "Plano B" caso o GPS esteja desligado
+  final LatLng _fallbackCenter = const LatLng(-29.3385, -49.7291);
+
+  @override
+  void initState() {
+    super.initState();
+    _determinePosition(); // Tenta pegar a localização logo ao iniciar
+  }
+
+  /// Função para pedir permissão e pegar a localização atual
+  Future<void> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // 1. Verifica se o serviço de GPS do celular está ligado
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    // 2. Verifica as permissões de localização
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
+    }
+
+    if (permission == LocationPermission.deniedForever) return;
+
+    // 3. Pega a posição atual
+    Position position = await Geolocator.getCurrentPosition();
+
+    // 4. Move a câmera do mapa para onde o usuário está de verdade
+    mapController.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(position.latitude, position.longitude),
+        15.0, // Zoom mais próximo para ver as ruas
+      ),
+    );
+  }
+
+  void _onMapCreated(GoogleMapController controller) {
+    mapController = controller;
+    // Tenta mover para a localização assim que o mapa estiver pronto
+    _determinePosition();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+        GoogleMap(
+          onMapCreated: _onMapCreated,
+          initialCameraPosition: CameraPosition(
+            target: _fallbackCenter, // Abre em Torres por 1 segundo enquanto o GPS carrega
+            zoom: 14.0,
           ),
-        ),
-
-        ...floodedAreas.map((area) {
-          return FloodMarker(
-            color: area["color"] as Color,
-            top: area["top"] as double,
-            left: area["left"] as double,
-          );
-        }),
-
-        const Center(
-          child: Icon(Icons.my_location, color: Colors.blue),
+          myLocationEnabled: true, // Mostra a bolinha azul
+          myLocationButtonEnabled: true, // Botão para centralizar no usuário
+          zoomControlsEnabled: false,
+          // Aqui você poderá carregar os marcadores do Firebase futuramente
+          markers: {
+            const Marker(
+              markerId: MarkerId('test_marker'),
+              position: LatLng(-29.3400, -49.7300),
+              infoWindow: InfoWindow(title: "Área de Risco"),
+            ),
+          },
         ),
 
         const Positioned(
-          top: 20,
-          right: 20,
+          top: 16,
+          right: 16,
           child: LegendWidget(),
         ),
       ],

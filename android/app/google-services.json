@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "834855358889",
+    "project_id": "tcc-flutter-7babd",
+    "storage_bucket": "tcc-flutter-7babd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:834855358889:android:d3264a19e8dc986215b4b8",
+        "android_client_info": {
+          "package_name": "com.example.tcc_alagouai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDC5NERtgfGs2KWdHVw2cWM8FqeFq3sPuQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

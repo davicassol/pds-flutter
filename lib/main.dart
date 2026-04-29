@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-// IMPORTS DAS TELAS (ajusta os caminhos conforme teu projeto)
+// IMPORTS DAS TELAS
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
 import 'features/map/screens/home_screen.dart';
@@ -15,7 +17,15 @@ import 'features/about/screens/about_screen.dart';
 import 'features/flood_detail/screens/flood_detail_screen.dart';
 import 'features/splash/splash_screen.dart';
 
-void main() {
+void main() async {
+  // Garante que o Flutter e os widgets estejam prontos antes de chamar código nativo
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializa o Firebase com as configurações corretas para o Android
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyApp());
 }
 
@@ -34,10 +44,10 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      // 🔥 TELA INICIAL
+      //  TELA INICIAL
       initialRoute: "/",
 
-      // 📌 ROTAS DO APP
+      //  ROTAS DO APP
       routes: {
         "/": (context) => const SplashScreen(),
         "/login": (context) => const LoginScreen(),
