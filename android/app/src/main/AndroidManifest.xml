@@ -10,7 +10,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="COLOQUE A CHAVE API AQUI" />
+            android:value="api google maps" />
 
         <activity
             android:name=".MainActivity"

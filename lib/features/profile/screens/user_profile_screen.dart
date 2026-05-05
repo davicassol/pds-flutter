@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_form.dart';
 import '../widgets/profile_stats.dart';
@@ -14,15 +15,54 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   bool isEditing = false;
 
-  String name = "João Silva";
-  String email = "joao@email.com";
+  String name = "";
+  String email = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      setState(() {
+        name = user.displayName ?? "Usuário";
+        email = user.email ?? "Sem e-mail cadastrado";
+      });
+    }
+  }
 
   void handleSave() {
     setState(() => isEditing = false);
   }
 
-  void handleLogout() {
-    Navigator.pushReplacementNamed(context, "/login");
+  Future<void> handleLogout() async {
+    try {
+      // Desconecta o usuário no servidor do Firebase
+      await FirebaseAuth.instance.signOut();
+
+      // Verifica se a tela ainda existe antes de tentar navegar
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          "/login",
+              (route) => false,
+        );
+      }
+    } catch (e) {
+      // Se der erro avisa o usuário
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Erro ao sair da conta. Verifique sua conexão e tente novamente."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override

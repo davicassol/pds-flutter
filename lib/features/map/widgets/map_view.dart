@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart'; // <--- Importante para o GPS
+import 'package:geolocator/geolocator.dart';
 import 'legend_widget.dart';
 
 class MapView extends StatefulWidget {
@@ -13,7 +13,6 @@ class MapView extends StatefulWidget {
 class _MapViewState extends State<MapView> {
   late GoogleMapController mapController;
 
-  // Torres continua aqui apenas como "Plano B" caso o GPS esteja desligado
   final LatLng _fallbackCenter = const LatLng(-29.3385, -49.7291);
 
   @override
@@ -22,16 +21,15 @@ class _MapViewState extends State<MapView> {
     _determinePosition(); // Tenta pegar a localização logo ao iniciar
   }
 
-  /// Função para pedir permissão e pegar a localização atual
   Future<void> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // 1. Verifica se o serviço de GPS do celular está ligado
+    // Verifica se o serviço de GPS do celular está ligado
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
 
-    // 2. Verifica as permissões de localização
+    // Verifica as permissões de localização
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -40,10 +38,10 @@ class _MapViewState extends State<MapView> {
 
     if (permission == LocationPermission.deniedForever) return;
 
-    // 3. Pega a posição atual
+    // Pega a posição atual
     Position position = await Geolocator.getCurrentPosition();
 
-    // 4. Move a câmera do mapa para onde o usuário está de verdade
+    // Move a câmera do mapa para onde o usuário está de verdade
     mapController.animateCamera(
       CameraUpdate.newLatLngZoom(
         LatLng(position.latitude, position.longitude),
@@ -54,7 +52,6 @@ class _MapViewState extends State<MapView> {
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
-    // Tenta mover para a localização assim que o mapa estiver pronto
     _determinePosition();
   }
 
@@ -65,13 +62,12 @@ class _MapViewState extends State<MapView> {
         GoogleMap(
           onMapCreated: _onMapCreated,
           initialCameraPosition: CameraPosition(
-            target: _fallbackCenter, // Abre em Torres por 1 segundo enquanto o GPS carrega
+            target: _fallbackCenter,
             zoom: 14.0,
           ),
-          myLocationEnabled: true, // Mostra a bolinha azul
-          myLocationButtonEnabled: true, // Botão para centralizar no usuário
+          myLocationEnabled: true,
+          myLocationButtonEnabled: true,
           zoomControlsEnabled: false,
-          // Aqui você poderá carregar os marcadores do Firebase futuramente
           markers: {
             const Marker(
               markerId: MarkerId('test_marker'),
@@ -80,10 +76,9 @@ class _MapViewState extends State<MapView> {
             ),
           },
         ),
-
         const Positioned(
-          top: 16,
-          right: 16,
+          bottom: 24,
+          left: 16,
           child: LegendWidget(),
         ),
       ],

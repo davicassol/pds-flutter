@@ -5,9 +5,6 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ---------------------------------------------------------
-  // 1. CADASTRO DE USUÁRIO (SIGN UP)
-  // ---------------------------------------------------------
   Future<String?> signUp({
     required String name,
     required String email,
@@ -19,10 +16,11 @@ class AuthService {
         email: email,
         password: password,
       );
+      await userCredential.user!.updateDisplayName(name);
 
       String uid = userCredential.user!.uid;
 
-      // Salva o perfil do usuário no Firestore (Nossa coleção 'usuarios')
+      // Salva o perfil do usuário no Firestore
       await _firestore.collection('usuarios').doc(uid).set({
         'uid': uid,
         'nome': name,
@@ -50,9 +48,6 @@ class AuthService {
     }
   }
 
-  // ---------------------------------------------------------
-  // 2. LOGIN (SIGN IN)
-  // ---------------------------------------------------------
   Future<String?> signIn({
     required String email,
     required String password,
@@ -63,7 +58,7 @@ class AuthService {
         password: password,
       );
 
-      return null; // Sucesso!
+      return null;
 
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
@@ -75,9 +70,6 @@ class AuthService {
     }
   }
 
-  // ---------------------------------------------------------
-  // 3. SAIR DA CONTA (SIGN OUT)
-  // ---------------------------------------------------------
   Future<void> signOut() async {
     await _auth.signOut();
   }

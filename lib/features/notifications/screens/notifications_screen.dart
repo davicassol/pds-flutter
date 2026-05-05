@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/notifications_header.dart';
 import '../widgets/notification_card.dart';
-import '../../../core/widgets/bottom_nav.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -63,7 +62,6 @@ class NotificationsScreen extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: const BottomNav(currentIndex: 1),
     );
   }
 }

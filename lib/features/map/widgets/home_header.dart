@@ -5,28 +5,38 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.only(top: 40.0, left: 16.0, right: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => Scaffold.of(context).openDrawer(),
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.menu, color: Colors.black87),
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
             ),
           ),
-          const Text(
-            "Torres, Brazil",
-            style: TextStyle(fontSize: 18, color: Colors.blue),
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.warning, color: Colors.blue),
+              onPressed: () {
+                Navigator.pushNamed(context, '/prediction');
+              },
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.warning, color: Colors.blue),
-            onPressed: () {
-              Navigator.pushNamed(context, '/prediction');
-            },
-          ),
+
         ],
       ),
     );

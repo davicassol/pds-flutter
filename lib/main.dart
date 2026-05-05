@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'core/screens/main_layout_screen.dart';
 import 'firebase_options.dart';
 
 // IMPORTS DAS TELAS
@@ -44,7 +45,6 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      //  TELA INICIAL
       initialRoute: "/",
 
       //  ROTAS DO APP
@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
         "/": (context) => const SplashScreen(),
         "/login": (context) => const LoginScreen(),
         "/signup": (context) => const SignUpScreen(),
-        "/home": (context) => const HomeScreen(),
+        "/home": (context) => const MainLayoutScreen(),
         "/report": (context) => const ReportScreen(),
         "/notifications": (context) => const NotificationsScreen(),
         "/route": (context) => const RouteScreen(),

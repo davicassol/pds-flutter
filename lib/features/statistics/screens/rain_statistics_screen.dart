@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/bottom_nav.dart';
 import '../widgets/stats_cards.dart';
 import '../widgets/rainfall_line_chart.dart';
 import '../widgets/monthly_bar_chart.dart';
@@ -34,7 +33,6 @@ class RainStatisticsScreen extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: const BottomNav(),
     );
   }
 }

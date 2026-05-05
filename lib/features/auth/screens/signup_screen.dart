@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -13,12 +14,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
-  // Variável para controlar o carregamento
   bool isLoading = false;
 
-  // Transformamos a função em assíncrona
   void handleSignUp() async {
-    // Verifica se tem algum campo vazio
     if (nameController.text.isEmpty || emailController.text.isEmpty || passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Por favor, preencha todos os campos")),
@@ -26,7 +24,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    // Verifica as senhas
     if (passwordController.text != confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("As senhas não coincidem")),
@@ -34,25 +31,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    //  Ativa o carregamento na tela
     setState(() {
       isLoading = true;
     });
 
-    //  Chama o serviço de autenticação
     String? erro = await AuthService().signUp(
       name: nameController.text.trim(),
       email: emailController.text.trim(),
       password: passwordController.text.trim(),
     );
 
-    //  Verifica se a tela ainda está aberta antes de atualizar (boa prática)
     if (!mounted) return;
     setState(() {
       isLoading = false;
     });
 
-    //  Trata o resultado
     if (erro == null) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
@@ -80,7 +73,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        padding: const EdgeInsets.all(24),
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
@@ -89,150 +83,145 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // HEADER
-              Row(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.blue),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    "Create Account",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ],
-              ),
-
-              const Spacer(),
-
-              // LOGO
-              Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: const BoxDecoration(
-                      color: Colors.blue,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.water_drop,
-                        color: Colors.white, size: 32),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Join FloodWatch today",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              //CARD
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: const [
-                    BoxShadow(
-                      blurRadius: 10,
-                      color: Colors.black12,
-                    )
-                  ],
-                ),
-                child: SingleChildScrollView( // Ajuda em telas menores
-                  child: Column(
+                  // HEADER
+                  Row(
                     children: [
-                      //NAME
-                      TextField(
-                        controller: nameController,
-                        decoration: buildInputDecoration("Full Name", "John Doe"),
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.blue),
+                        onPressed: () => Navigator.pop(context),
                       ),
-                      const SizedBox(height: 16),
-
-                      //EMAIL
-                      TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress, // Mostra o @ no teclado
-                        decoration: buildInputDecoration("Email", "your.email@example.com"),
-                      ),
-                      const SizedBox(height: 16),
-
-                      //PASSWORD
-                      TextField(
-                        controller: passwordController,
-                        obscureText: true,
-                        decoration: buildInputDecoration("Password", "••••••••"),
-                      ),
-                      const SizedBox(height: 16),
-
-                      //CONFIRM PASSWORD
-                      TextField(
-                        controller: confirmPasswordController,
-                        obscureText: true,
-                        decoration: buildInputDecoration("Confirm Password", "••••••••"),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      //BUTTON
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          //Se estiver carregando, desativa o botão
-                          onPressed: isLoading ? null : handleSignUp,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          //Mostra o spinner se estiver carregando, ou o texto se não
-                          child: isLoading
-                              ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                          )
-                              : const Text(
-                            "Create Account",
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        "Create Account",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
                         ),
                       ),
                     ],
                   ),
-                ),
-              ),
 
-              const SizedBox(height: 16),
+                  const SizedBox(height: 32),
 
-              //FOOTER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Already have an account? "),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                  // LOGO
+                  Column(
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: const BoxDecoration(
+                          color: Colors.blue,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.water_drop,
+                            color: Colors.white, size: 32),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        "Join FloodWatch today",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // CARD
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: const [
+                        BoxShadow(
+                          blurRadius: 10,
+                          color: Colors.black12,
+                        )
+                      ],
                     ),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: nameController,
+                          textCapitalization: TextCapitalization.words, // Ajuda a iniciar o nome com Maiúscula
+                          decoration: buildInputDecoration("Full Name", "John Doe"),
+                        ),
+                        const SizedBox(height: 16),
+
+                        TextField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: buildInputDecoration("Email", "your.email@example.com"),
+                        ),
+                        const SizedBox(height: 16),
+
+                        TextField(
+                          controller: passwordController,
+                          obscureText: true,
+                          decoration: buildInputDecoration("Password", "••••••••"),
+                        ),
+                        const SizedBox(height: 16),
+
+                        TextField(
+                          controller: confirmPasswordController,
+                          obscureText: true,
+                          decoration: buildInputDecoration("Confirm Password", "••••••••"),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: isLoading ? null : handleSignUp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: isLoading
+                                ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                : const Text(
+                              "Create Account",
+                              style: TextStyle(fontSize: 16, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // FOOTER
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Already have an account? "),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: const Text(
+                          "Login",
+                          style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-
-              const Spacer(),
-            ],
+            ),
           ),
         ),
       ),

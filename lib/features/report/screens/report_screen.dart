@@ -24,7 +24,9 @@ class _ReportScreenState extends State<ReportScreen> {
     );
 
     Future.delayed(const Duration(milliseconds: 1500), () {
-      Navigator.pushNamed(context, '/home');
+      if (mounted) {
+        Navigator.pop(context);
+      }
     });
   }
 
