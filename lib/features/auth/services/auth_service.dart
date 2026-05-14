@@ -31,7 +31,7 @@ class AuthService {
         'data_cadastro': FieldValue.serverTimestamp(),
       });
 
-      return null; // Retorna nulo indicando que deu tudo certo!
+      return null;
 
     } on FirebaseAuthException catch (e) {
       // Tradução dos erros mais comuns para o usuário

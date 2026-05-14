@@ -10,26 +10,28 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # --- SUAS DEPENDÊNCIAS ORIGINAIS ---
-  image_picker: ^1.0.0 # Para capturar fotos caso queira validar os alagamentos
-  fl_chart: ^0.68.0    # Para os gráficos estatísticos do seu sistema
+ #DEPENDÊNCIAS ORIGINAIS
+  image_picker: ^1.0.0
+  fl_chart: ^0.68.0
   cupertino_icons: ^1.0.8
 
-  # --- GERENCIAMENTO DE ESTADO E REDE ---
-  provider: ^6.1.1 # Gerenciamento de estado (essencial para as mudanças do mapa em tempo real)
-  http: ^1.2.0     # Para consumir a API de Clima (RF10) e a API de Rotas
+  #GERENCIAMENTO DE ESTADO E REDE
+  provider: ^6.1.1
+  http: ^1.2.0
 
-  # --- FIREBASE (Backend, Banco e Autenticação) ---
-  firebase_core: ^2.32.0       # Base obrigatória para usar o Firebase
-  firebase_auth: ^4.16.0       # Cadastro, Login e Recuperação de Senha (RF01, RF02, RF03)
-  cloud_firestore: ^4.15.0     # Banco de dados em nuvem para salvar e ler ocorrências (RF05, RF06, RF13)
-  firebase_messaging: ^14.7.10 # Notificações de alerta de alagamento (RF12)
+  #FIREBASE
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.16.0
+  cloud_firestore: ^4.15.0
+  firebase_messaging: ^14.7.10
+  firebase_storage: ^11.6.5
 
-  # --- MAPAS E LOCALIZAÇÃO ---
-  google_maps_flutter: ^2.5.3     # Exibição interativa do mapa (RF04)
-  geolocator: ^10.1.0             # Captura automática de localização via GPS (RF07)
-  geocoding: ^2.1.1               # Converte as coordenadas do GPS em nomes de ruas
-  flutter_polyline_points: ^2.0.0 # Usado para desenhar as linhas da rota no mapa
+  # MAPAS E LOCALIZAÇÃO
+  google_maps_flutter: ^2.5.3
+  geolocator: ^10.1.0
+  geocoding: ^4.0.0
+  flutter_polyline_points: ^2.0.0
+
 
 dev_dependencies:
   flutter_test:
