@@ -54,16 +54,17 @@ class _MapViewState extends State<MapView> {
 
   // Define a cor baseada no nível do alagamento
   Color _getColor(String level) {
-    if (level.toLowerCase() == 'low') return Colors.yellow;
-    if (level.toLowerCase() == 'medium') return Colors.orange;
-    return Colors.red;
+    String safeLevel = level.toLowerCase();
+    if (safeLevel == 'low') return Colors.yellow;
+    if (safeLevel == 'medium') return Colors.orange;
+    return Colors.red; // default para alto perigo
   }
 
-  // Define o raio da mancha
   double _getRadius(String level) {
-    if (level.toLowerCase() == 'low') return 15.0;
-    if (level.toLowerCase() == 'medium') return 30.0;
-    return 50.0;
+    String safeLevel = level.toLowerCase();
+    if (safeLevel == 'low') return 15.0;
+    if (safeLevel == 'medium') return 20.0;
+    return 30.0; // default para alto perigo
   }
 
   @override
@@ -81,21 +82,33 @@ class _MapViewState extends State<MapView> {
             if (data['lat'] != null && data['lng'] != null) {
               final pos = LatLng(data['lat'], data['lng']);
 
-              final level = data['floodLevel'] ?? 'medium';
+              // Pega o nível (garante que não seja nulo para evitar erro)
+              final level = data['floodLevel'] ?? 'high';
               final street = data['streetName'] ?? 'Rua Desconhecida';
+              double markerColor = BitmapDescriptor.hueRed;
+              if (level.toLowerCase() == 'low') {
+                markerColor = BitmapDescriptor.hueYellow;
+              } else if (level.toLowerCase() == 'medium') {
+                markerColor = BitmapDescriptor.hueOrange;
+              }
 
               // Cria o PINO
               markers.add(Marker(
                 markerId: MarkerId(doc.id),
                 position: pos,
-                infoWindow: InfoWindow(title: "Rua: $street"),
+                icon: BitmapDescriptor.defaultMarkerWithHue(markerColor),
+                infoWindow: InfoWindow(
+                  title: "Nível: $level",
+                  snippet: "Rua: $street",
+                ),
               ));
 
+              // Cria a mancha
               circles.add(Circle(
                 circleId: CircleId("circle_${doc.id}"),
                 center: pos,
                 radius: _getRadius(level),
-                fillColor: _getColor(level).withOpacity(0.3),
+                fillColor: _getColor(level).withValues(alpha: 0.3),
                 strokeColor: _getColor(level),
                 strokeWidth: 2,
               ));

@@ -4,6 +4,7 @@ import '../widgets/profile_header.dart';
 import '../widgets/profile_form.dart';
 import '../widgets/profile_stats.dart';
 import '../widgets/logout_button.dart';
+import '../../report/screens/my_reports_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -73,6 +74,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         title: const Text("User Profile"),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        elevation: 1,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -95,11 +97,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
                   const SizedBox(height: 16),
 
+                  // Onde os status são renderizados
                   const ProfileStats(),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
                   LogoutButton(onLogout: handleLogout),
+
+                  const SizedBox(height: 20),
                 ],
               ),
             ),

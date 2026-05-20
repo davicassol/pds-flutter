@@ -10,15 +10,11 @@ class ReportService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // Função interna para subir a foto e pegar o link
   Future<String?> _uploadImage(File imageFile) async {
     try {
-      // Cria um nome único usando a data e hora atual
       String fileName = 'reportes/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
       Reference ref = _storage.ref().child(fileName);
       UploadTask uploadTask = ref.putFile(imageFile);
-
       TaskSnapshot snapshot = await uploadTask;
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
@@ -34,6 +30,23 @@ class ReportService {
     File? imageFile,
   }) async {
     try {
+      String? currentUserId = _auth.currentUser?.uid;
+      if (currentUserId == null) return "Usuário não autenticado.";
+
+      //Limite de 3 reportes por dia
+      DateTime now = DateTime.now();
+      DateTime startOfToday = DateTime(now.year, now.month, now.day);
+
+      QuerySnapshot todayReports = await _firestore
+          .collection('reportes')
+          .where('userId', isEqualTo: currentUserId)
+          .where('timestamp', isGreaterThanOrEqualTo: startOfToday)
+          .get();
+
+      if (todayReports.docs.length >= 3) {
+        return "Você atingiu o limite máximo de 3 reportes para o dia de hoje.";
+      }
+
       Position currentPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -47,7 +60,6 @@ class ReportService {
         return "Você está muito longe do local! Só é permitido reportar alagamentos num raio de 100 metros.";
       }
 
-      // Se o usuário tirou foto, faz o upload primeiro
       String? imageUrl;
       if (imageFile != null) {
         imageUrl = await _uploadImage(imageFile);
@@ -59,7 +71,7 @@ class ReportService {
           : "Localização Selecionada";
 
       await _firestore.collection('reportes').add({
-        'userId': _auth.currentUser?.uid,
+        'userId': currentUserId,
         'userName': _auth.currentUser?.displayName ?? "Anônimo",
         'streetName': realStreetName,
         'floodLevel': floodLevel,
@@ -75,11 +87,33 @@ class ReportService {
     }
   }
 
+  // Busca todos os reportes ativos no mapa (última 1 hora)
   Stream<QuerySnapshot> getActiveReports() {
     DateTime oneHourAgo = DateTime.now().subtract(const Duration(hours: 1));
     return _firestore
         .collection('reportes')
         .where('timestamp', isGreaterThan: oneHourAgo)
         .snapshots();
+  }
+
+  //Busca reportes do usuário logado
+  Stream<QuerySnapshot> getUserReports() {
+    String? currentUserId = _auth.currentUser?.uid;
+    return _firestore
+        .collection('reportes')
+        .where('userId', isEqualTo: currentUserId)
+        .snapshots();
+  }
+
+  //Deleta o reporte do Firestore
+  Future<void> deleteReport(String reportId, String? imageUrl) async {
+    try {
+      await _firestore.collection('reportes').doc(reportId).delete();
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        await _storage.refFromURL(imageUrl).delete();
+      }
+    } catch (e) {
+      print("Erro ao deletar reporte: $e");
+    }
   }
 }
