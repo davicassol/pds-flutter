@@ -10,14 +10,14 @@ dependencies:
   flutter:
     sdk: flutter
 
- #DEPENDÊNCIAS ORIGINAIS
+  #DEPENDÊNCIAS ORIGINAIS
   image_picker: ^1.0.0
   fl_chart: ^0.68.0
   cupertino_icons: ^1.0.8
 
   #GERENCIAMENTO DE ESTADO E REDE
   provider: ^6.1.1
-  http: ^1.2.0
+  http: ^1.6.0
 
   #FIREBASE
   firebase_core: ^2.32.0
@@ -30,9 +30,9 @@ dependencies:
   google_maps_flutter: ^2.5.3
   geolocator: ^10.1.0
   geocoding: ^4.0.0
-  flutter_polyline_points: ^2.0.0
+  flutter_polyline_points: ^3.1.0
   intl: ^0.20.2
-
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -41,3 +41,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - .env

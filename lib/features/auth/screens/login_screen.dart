@@ -154,7 +154,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // BOTÃO INTELIGENTE
                         // Se isLoading for true, mostra a bolinha girando. Se false, mostra o seu botão original.
                         isLoading
                             ? const CircularProgressIndicator(color: Colors.blue)
@@ -193,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 24),
 
-                  // 🌧ILUSTRAÇÃO
+                  // ilustração
                   const Icon(
                     Icons.cloud,
                     size: 100,

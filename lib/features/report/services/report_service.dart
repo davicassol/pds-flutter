@@ -32,34 +32,49 @@ class ReportService {
     try {
       String? currentUserId = _auth.currentUser?.uid;
       if (currentUserId == null) return "Usuário não autenticado.";
-
-      //Limite de 3 reportes por dia
-      DateTime now = DateTime.now();
-      DateTime startOfToday = DateTime(now.year, now.month, now.day);
-
-      QuerySnapshot todayReports = await _firestore
-          .collection('reportes')
-          .where('userId', isEqualTo: currentUserId)
-          .where('timestamp', isGreaterThanOrEqualTo: startOfToday)
-          .get();
-
-      if (todayReports.docs.length >= 3) {
-        return "Você atingiu o limite máximo de 3 reportes para o dia de hoje.";
+      bool isAdmin = false;
+      try {
+        DocumentSnapshot userDoc = await _firestore.collection('usuarios').doc(currentUserId).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>?;
+          if (userData != null && userData['isAdmin'] == true) {
+            isAdmin = true;
+          }
+        }
+      } catch (e) {
+        print("Erro ao verificar status de administrador: $e");
       }
 
-      Position currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      // aplica as regras se não for adm
+      if (!isAdmin) {
+        // regra de 3 reportes por dia
+        DateTime now = DateTime.now();
+        DateTime startOfToday = DateTime(now.year, now.month, now.day);
 
-      double distanceInMeters = Geolocator.distanceBetween(
-        currentPosition.latitude, currentPosition.longitude,
-        selectedLat, selectedLng,
-      );
+        QuerySnapshot todayReports = await _firestore
+            .collection('reportes')
+            .where('userId', isEqualTo: currentUserId)
+            .where('timestamp', isGreaterThanOrEqualTo: startOfToday)
+            .get();
 
-      if (distanceInMeters > 100) {
-        return "Você está muito longe do local! Só é permitido reportar alagamentos num raio de 100 metros.";
+        if (todayReports.docs.length >= 3) {
+          return "Você atingiu o limite máximo de 3 reportes para o dia de hoje.";
+        }
+
+        // regra de distância máxima de 100 metros
+        Position currentPosition = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+
+        double distanceInMeters = Geolocator.distanceBetween(
+          currentPosition.latitude, currentPosition.longitude,
+          selectedLat, selectedLng,
+        );
+
+        if (distanceInMeters > 100) {
+          return "Você está muito longe do local! Só é permitido reportar alagamentos num raio de 100 metros.";
+        }
       }
-
       String? imageUrl;
       if (imageFile != null) {
         imageUrl = await _uploadImage(imageFile);
@@ -81,13 +96,13 @@ class ReportService {
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      return null;
+      return null; // retorna null se for sucesso
     } catch (e) {
       return "Erro ao enviar reporte: $e";
     }
   }
 
-  // Busca todos os reportes ativos no mapa (última 1 hora)
+  // busca todos os reportes ativos no mapa (última 1 hora)
   Stream<QuerySnapshot> getActiveReports() {
     DateTime oneHourAgo = DateTime.now().subtract(const Duration(hours: 1));
     return _firestore
@@ -96,7 +111,7 @@ class ReportService {
         .snapshots();
   }
 
-  //Busca reportes do usuário logado
+  // busca reportes do usuário logado
   Stream<QuerySnapshot> getUserReports() {
     String? currentUserId = _auth.currentUser?.uid;
     return _firestore
@@ -105,7 +120,7 @@ class ReportService {
         .snapshots();
   }
 
-  //Deleta o reporte do Firestore
+  // deleta o reporte do Firestore
   Future<void> deleteReport(String reportId, String? imageUrl) async {
     try {
       await _firestore.collection('reportes').doc(reportId).delete();

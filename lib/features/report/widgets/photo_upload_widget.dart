@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-class PhotoUploadWidget extends StatelessWidget {
+class PhotoUploadWidget extends StatefulWidget {
   final String? photo;
   final Function(String?) onChanged;
 
@@ -12,13 +12,53 @@ class PhotoUploadWidget extends StatelessWidget {
     required this.onChanged,
   });
 
-  Future<void> pickImage() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
+  @override
+  State<PhotoUploadWidget> createState() => _PhotoUploadWidgetState();
+}
 
-    if (file != null) {
-      onChanged(file.path);
+class _PhotoUploadWidgetState extends State<PhotoUploadWidget> {
+  String? _localPhoto;
+
+  @override
+  void initState() {
+    super.initState();
+    _localPhoto = widget.photo;
+  }
+
+  @override
+  void didUpdateWidget(covariant PhotoUploadWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.photo != oldWidget.photo && widget.photo != null) {
+      setState(() {
+        _localPhoto = widget.photo;
+      });
     }
+  }
+
+  Future<void> _takePhotoDirectly() async {
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+
+      if (file != null) {
+        setState(() {
+          _localPhoto = file.path; // atualiza a caixinha na hora
+        });
+        widget.onChanged(file.path); // envia o caminho do ficheiro para o formulário salvar no Firebase
+      }
+    } catch (e) {
+      debugPrint("Erro ao abrir a câmara ou capturar imagem: $e");
+    }
+  }
+
+  void _removePhoto() {
+    setState(() {
+      _localPhoto = null;
+    });
+    widget.onChanged(null);
   }
 
   @override
@@ -26,34 +66,42 @@ class PhotoUploadWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Photo (Optional)"),
+        const Text(
+          "Foto do Alagamento",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
         const SizedBox(height: 10),
         GestureDetector(
-          onTap: pickImage,
+          onTap: _localPhoto == null ? _takePhotoDirectly : null,
           child: Container(
             width: double.infinity,
             height: 150,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
+              border: Border.all(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(12),
+              color: Colors.grey.shade50,
             ),
-            child: photo != null
+            child: _localPhoto != null
                 ? Stack(
               children: [
-                Image.file(
-                  File(photo!),
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    File(_localPhoto!),
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 Positioned(
                   top: 8,
                   right: 8,
                   child: GestureDetector(
-                    onTap: () => onChanged(null),
+                    onTap: _removePhoto,
                     child: const CircleAvatar(
                       backgroundColor: Colors.red,
-                      child: Icon(Icons.close, color: Colors.white),
+                      radius: 16,
+                      child: Icon(Icons.close, color: Colors.white, size: 20),
                     ),
                   ),
                 ),
@@ -65,7 +113,7 @@ class PhotoUploadWidget extends StatelessWidget {
                 children: [
                   Icon(Icons.camera_alt, size: 40, color: Colors.grey),
                   SizedBox(height: 6),
-                  Text("Tap to upload photo"),
+                  Text("Toque para abrir a câmara", style: TextStyle(color: Colors.grey)),
                 ],
               ),
             ),

@@ -1,0 +1,197 @@
+import 'dart:convert';
+import 'dart:math' as math;
+import 'package:http/http.dart' as http;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:geolocator/geolocator.dart';
+
+class SafeRouteResult {
+  final List<LatLng> points;
+  final String distance;
+  final String duration;
+  final int floodsCrossed;
+  final int totalFloods;
+  final double score;
+  final LatLng? criticalFlood;
+
+  SafeRouteResult({
+    required this.points,
+    required this.distance,
+    required this.duration,
+    required this.floodsCrossed,
+    required this.totalFloods,
+    required this.score,
+    this.criticalFlood,
+  });
+}
+
+class RouteService {
+  final String apiKey = dotenv.env['MAPS_API_KEY'] ?? "";
+
+  bool _isPointInFlood(LatLng routePoint, double floodLat, double floodLng, double toleranceMeters) {
+    double distance = Geolocator.distanceBetween(
+        routePoint.latitude, routePoint.longitude,
+        floodLat, floodLng
+    );
+    return distance <= toleranceMeters;
+  }
+  List<LatLng> _generateEscapePoints(LatLng center, double distanceInMeters) {
+    double latOffset = distanceInMeters / 111320.0;
+    double lngOffset = distanceInMeters / (40075000.0 * math.cos(center.latitude * math.pi / 180) / 360.0);
+
+    return [
+      LatLng(center.latitude + latOffset, center.longitude), // Norte
+      LatLng(center.latitude - latOffset, center.longitude), // Sul
+      LatLng(center.latitude, center.longitude + lngOffset), // Leste
+      LatLng(center.latitude, center.longitude - lngOffset), // Oeste
+      LatLng(center.latitude + latOffset, center.longitude + lngOffset), // Nordeste
+      LatLng(center.latitude + latOffset, center.longitude - lngOffset), // Noroeste
+      LatLng(center.latitude - latOffset, center.longitude + lngOffset), // Sudeste
+      LatLng(center.latitude - latOffset, center.longitude - lngOffset), // Sudoeste
+    ];
+  }
+
+  Future<SafeRouteResult?> getRoute(
+      LatLng origin,
+      LatLng destination,
+      List<Map<String, dynamic>> activeFloods
+      ) async {
+    if (apiKey.isEmpty) return null;
+
+    SafeRouteResult? originalRoute = await _fetchAndScoreRoute(origin, destination, activeFloods, null);
+
+    if (originalRoute == null || originalRoute.floodsCrossed == 0) {
+      return originalRoute;
+    }
+
+    print("Rota cruzou ${originalRoute.floodsCrossed} alagamentos. Ativando Radar Octogonal de Desvio");
+
+    LatLng problemArea = originalRoute.criticalFlood ?? LatLng(activeFloods.first['lat'], activeFloods.first['lng']);
+
+    List<LatLng> escapePoints = _generateEscapePoints(problemArea, 300);
+
+    SafeRouteResult? bestDetour;
+    double bestDetourScore = double.infinity;
+
+    for (var escapePoint in escapePoints) {
+      SafeRouteResult? detourAttempt = await _fetchAndScoreRoute(origin, destination, activeFloods, escapePoint);
+
+      if (detourAttempt != null) {
+        if (detourAttempt.floodsCrossed == 0) {
+          print("DESVIO PERFEITO ENCONTRADO! Contornando o alagamento");
+          return detourAttempt;
+        }
+
+        if (detourAttempt.score < bestDetourScore) {
+          bestDetourScore = detourAttempt.score;
+          bestDetour = detourAttempt;
+        }
+      }
+    }
+
+    if (bestDetour != null && bestDetour.score < originalRoute.score) {
+      print("Desvio imperfeito usado. Tem água, mas é menos perigoso que a rota original");
+      return bestDetour;
+    }
+
+    print("Bairro isolado. Mantendo rota original com alerta vermelho.");
+    return originalRoute;
+  }
+
+  Future<SafeRouteResult?> _fetchAndScoreRoute(
+      LatLng origin, LatLng destination, List<Map<String, dynamic>> activeFloods, LatLng? waypoint) async {
+
+    String url = 'https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&alternatives=true&key=$apiKey';
+
+    if (waypoint != null) {
+      url += '&waypoints=via:${waypoint.latitude},${waypoint.longitude}';
+    }
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) return null;
+
+      final data = json.decode(response.body);
+      final routes = data['routes'] as List;
+      if (routes.isEmpty) return null;
+
+      List<LatLng> bestRoute = [];
+      double bestScore = double.infinity;
+      String bestDistance = "";
+      String bestDuration = "";
+      int bestFloodsHit = 0;
+      LatLng? worstFloodHit;
+
+      for (var route in routes) {
+        double baseDistance = (route['legs'][0]['distance']['value']).toDouble();
+        String currentDistanceText = route['legs'][0]['distance']['text'];
+        String currentDurationText = route['legs'][0]['duration']['text'];
+
+        String encodedPolyline = route['overview_polyline']['points'];
+        List<PointLatLng> decodedPoints = PolylinePoints.decodePolyline(encodedPolyline);
+        List<LatLng> currentRouteCoords = decodedPoints.map((p) => LatLng(p.latitude, p.longitude)).toList();
+
+        double penaltyScore = 0;
+        Set<int> floodsHit = {};
+        LatLng? localWorstFlood;
+        double highestPenalty = 0;
+
+        for (var coord in currentRouteCoords) {
+          for (int i = 0; i < activeFloods.length; i++) {
+            if (floodsHit.contains(i)) continue;
+
+            var flood = activeFloods[i];
+            String safeLevel = (flood['floodLevel'] ?? 'high').toLowerCase();
+
+            // Margens de colisão
+            double tolerance = safeLevel == 'low' ? 30.0 : (safeLevel == 'medium' ? 50.0 : 80.0);
+
+            if (_isPointInFlood(coord, flood['lat'], flood['lng'], tolerance)) {
+              floodsHit.add(i);
+              double currentPenalty = 0;
+
+              if (safeLevel == 'high') {
+                currentPenalty = 99000000.0;
+              } else if (safeLevel == 'medium') {
+                currentPenalty = 50000.0;
+              } else {
+                currentPenalty = 10000.0;
+              }
+
+              penaltyScore += currentPenalty;
+
+              if (currentPenalty > highestPenalty) {
+                highestPenalty = currentPenalty;
+                localWorstFlood = LatLng(flood['lat'], flood['lng']);
+              }
+            }
+          }
+        }
+
+        double totalRouteScore = baseDistance + penaltyScore;
+
+        if (totalRouteScore < bestScore) {
+          bestScore = totalRouteScore;
+          bestRoute = currentRouteCoords;
+          bestDistance = currentDistanceText;
+          bestDuration = currentDurationText;
+          bestFloodsHit = floodsHit.length;
+          worstFloodHit = localWorstFlood;
+        }
+      }
+
+      return SafeRouteResult(
+        points: bestRoute,
+        distance: bestDistance,
+        duration: bestDuration,
+        floodsCrossed: bestFloodsHit,
+        totalFloods: activeFloods.length,
+        score: bestScore,
+        criticalFlood: worstFloodHit,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+}
