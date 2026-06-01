@@ -17,7 +17,7 @@ class FloodLevelSelector extends StatelessWidget {
       child: GestureDetector(
         onTap: () => onChanged(value),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
           decoration: BoxDecoration(
             color: isSelected ? color.withOpacity(0.1) : Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -37,7 +37,7 @@ class FloodLevelSelector extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(label),
+              Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -50,15 +50,15 @@ class FloodLevelSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Flood Level"),
+        const Text("Nível do Alagamento", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 10),
         Row(
           children: [
-            buildOption("Low", Colors.yellow, "low"),
+            buildOption("Baixo", Colors.yellow.shade700, "low"),
             const SizedBox(width: 8),
-            buildOption("Medium", Colors.orange, "medium"),
+            buildOption("Médio", Colors.orange, "medium"),
             const SizedBox(width: 8),
-            buildOption("High", Colors.red, "high"),
+            buildOption("Alto", Colors.red, "high"),
           ],
         ),
       ],

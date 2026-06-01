@@ -2,12 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
 import '../services/report_service.dart';
-import '../widgets/report_header.dart';
 import '../widgets/flood_level_selector.dart';
 import '../widgets/photo_upload_widget.dart';
-import '../widgets/info_card.dart';
 import '../../auth/widgets/primary_button.dart';
 
 class ReportScreen extends StatefulWidget {
@@ -18,7 +15,7 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
-  String floodLevel = "Risk";
+  String floodLevel = "medium"; // Mudei o padrão para "medium" para casar com o banco
   bool isLoading = false;
 
   File? _selectedImage;
@@ -47,21 +44,6 @@ class _ReportScreenState extends State<ReportScreen> {
     }
   }
 
-  // Função para abrir a câmera
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 50,
-    );
-
-    if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
-    }
-  }
-
   void handleSubmit() async {
     if (selectedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -72,6 +54,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
     setState(() { isLoading = true; });
 
+    // 🧠 AGORA SIM! Ele vai mandar o _selectedImage preenchido corretamente
     String? erro = await ReportService().addReport(
       floodLevel: floodLevel,
       selectedLat: selectedLocation!.latitude,
@@ -99,7 +82,29 @@ class _ReportScreenState extends State<ReportScreen> {
     return Scaffold(
       body: Column(
         children: [
-          const ReportHeader(),
+          // 🛑 Header traduzido embutido
+          Container(
+            color: Colors.white,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      "Reportar Alagamento",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
 
           Expanded(
             child: SingleChildScrollView(
@@ -162,9 +167,18 @@ class _ReportScreenState extends State<ReportScreen> {
 
                         const SizedBox(height: 20),
 
+                        // 🧠 A CORREÇÃO DA FOTO: Salva a foto na variável!
                         PhotoUploadWidget(
                           photo: _selectedImage?.path,
-                          onChanged: (value) => _pickImage(),
+                          onChanged: (caminhoDaFoto) {
+                            setState(() {
+                              if (caminhoDaFoto != null) {
+                                _selectedImage = File(caminhoDaFoto);
+                              } else {
+                                _selectedImage = null;
+                              }
+                            });
+                          },
                         ),
 
                         const SizedBox(height: 24),
@@ -172,7 +186,7 @@ class _ReportScreenState extends State<ReportScreen> {
                         isLoading
                             ? const CircularProgressIndicator(color: Colors.blue)
                             : PrimaryButton(
-                          text: "Report Flood",
+                          text: "Enviar Reporte",
                           onPressed: handleSubmit,
                         ),
                       ],
@@ -180,7 +194,19 @@ class _ReportScreenState extends State<ReportScreen> {
                   ),
 
                   const SizedBox(height: 16),
-                  const InfoCard(),
+
+                  // Card traduzido embutido
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Text(
+                      "Seu reporte ajuda a manter a comunidade informada sobre os alagamentos em tempo real.",
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ),
                 ],
               ),
             ),

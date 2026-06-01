@@ -32,7 +32,7 @@ class _RouteHeaderState extends State<RouteHeader> {
   List<dynamic> _placeList = [];
   Timer? _debounce;
 
-  // variável para guardar o GPS e usar como viés na pesquisa
+  //variável para guardar o GPS e usar como viés na pesquisa
   LatLng? _currentPositionForBias;
 
   @override
@@ -96,8 +96,6 @@ class _RouteHeaderState extends State<RouteHeader> {
     if (apiKey.isEmpty) return;
 
     String url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$apiKey&language=pt-BR&components=country:br';
-
-    // FORÇANDO O DART A ENTENDER QUE NÃO É NULO
     if (_currentPositionForBias != null) {
       double lat = _currentPositionForBias!.latitude;
       double lng = _currentPositionForBias!.longitude;

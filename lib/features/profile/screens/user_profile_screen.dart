@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_form.dart';
 import '../widgets/profile_stats.dart';
 import '../widgets/logout_button.dart';
-import '../../report/screens/my_reports_screen.dart';
+
+// ⚠️ ATENÇÃO: Ajuste este caminho se o seu user_service.dart estiver em outra pasta!
+import '../services/user_service.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -15,9 +18,12 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
   bool isEditing = false;
+  bool isLoading = false;
 
-  String name = "";
+  final TextEditingController _nameController = TextEditingController();
   String email = "";
+  String? photoUrl;
+  File? _selectedImage;
 
   @override
   void initState() {
@@ -27,40 +33,51 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   void _loadUserData() {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
       setState(() {
-        name = user.displayName ?? "Usuário";
+        _nameController.text = user.displayName ?? "";
         email = user.email ?? "Sem e-mail cadastrado";
+        photoUrl = user.photoURL;
       });
     }
   }
 
-  void handleSave() {
-    setState(() => isEditing = false);
+  Future<void> handleSave() async {
+    setState(() => isLoading = true);
+
+    String? erro = await UserService().updateUserProfile(
+      name: _nameController.text.trim(),
+      imageFile: _selectedImage,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      isLoading = false;
+      isEditing = false;
+    });
+
+    if (erro == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Perfil atualizado com sucesso!"), backgroundColor: Colors.green),
+      );
+      _loadUserData();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(erro), backgroundColor: Colors.red),
+      );
+    }
   }
 
   Future<void> handleLogout() async {
     try {
-      // Desconecta o usuário no servidor do Firebase
       await FirebaseAuth.instance.signOut();
-
-      // Verifica se a tela ainda existe antes de tentar navegar
       if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          "/login",
-              (route) => false,
-        );
+        Navigator.pushNamedAndRemoveUntil(context, "/login", (route) => false);
       }
     } catch (e) {
-      // Se der erro avisa o usuário
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Erro ao sair da conta. Verifique sua conexão e tente novamente."),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text("Erro ao sair da conta."), backgroundColor: Colors.red),
         );
       }
     }
@@ -69,41 +86,49 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text("User Profile"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
+      backgroundColor: Colors.grey[100],
       body: SingleChildScrollView(
         child: Column(
           children: [
-            ProfileHeader(name: name, email: email),
+            ProfileHeader(
+              name: _nameController.text,
+              email: email,
+              photoUrl: photoUrl,
+              localImage: _selectedImage,
+              onImagePicked: (File image) {
+                setState(() {
+                  _selectedImage = image;
+                  isEditing = true;
+                });
+              },
+            ),
 
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  ProfileForm(
+                  isLoading
+                      ? const Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
+                  )
+                      : ProfileForm(
                     isEditing: isEditing,
-                    name: name,
                     email: email,
-                    onEdit: () => setState(() => isEditing = !isEditing),
+                    nameController: _nameController,
+                    onEdit: () {
+                      setState(() {
+                        isEditing = !isEditing;
+                        if (!isEditing) _selectedImage = null;
+                      });
+                    },
                     onSave: handleSave,
-                    onNameChanged: (v) => name = v,
-                    onEmailChanged: (v) => email = v,
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // Onde os status são renderizados
-                  const ProfileStats(),
-
                   const SizedBox(height: 24),
-
+                  const ProfileStats(),
+                  const SizedBox(height: 32),
                   LogoutButton(onLogout: handleLogout),
-
                   const SizedBox(height: 20),
                 ],
               ),
