@@ -44,7 +44,6 @@ class NotificationCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🔴 Ícone
           Container(
             width: 48,
             height: 48,
@@ -57,7 +56,6 @@ class NotificationCard extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-          // 📄 Conteúdo
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

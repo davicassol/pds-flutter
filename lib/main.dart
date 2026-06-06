@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'core/screens/main_layout_screen.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/login_screen.dart';
@@ -16,21 +17,28 @@ import 'features/settings/screens/settings_screen.dart';
 import 'features/about/screens/about_screen.dart';
 import 'features/flood_detail/screens/flood_detail_screen.dart';
 import 'features/splash/splash_screen.dart';
-
+import 'package:tcc_alagouai/core/providers/weather_provider.dart';
 
 void main() async {
-  // Garante que o Flutter e os widgets estejam prontos antes de chamar código nativo
+  //garante que o Flutter e os widgets estejam prontos antes de chamar código nativo
   WidgetsFlutterBinding.ensureInitialized();
 
-  //Carrega as chaves do arquivo .env de forma segura antes de rodar o app
+  //carrega as chaves do arquivo .env de forma segura antes de rodar o app
   await dotenv.load(fileName: ".env");
 
-  // Inicializa o Firebase com as configurações corretas para o Android
+  //inicializa o Firebase com as configurações corretas para o Android
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => WeatherProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
