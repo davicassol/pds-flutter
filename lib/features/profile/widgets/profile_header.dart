@@ -83,7 +83,6 @@ class ProfileHeader extends StatelessWidget {
               style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)
           ),
           const SizedBox(height: 4),
-          // 🛑 ERRO CORRIGIDO AQUI (Colors.white54):
           Text(
               email,
               style: const TextStyle(color: Colors.white54, fontSize: 14)

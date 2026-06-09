@@ -11,7 +11,7 @@ class ProfileStats extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          // O StreamBuilder fica escutando o banco em tempo real
+          //streambuilder fica escutando o banco
           child: StreamBuilder<QuerySnapshot>(
             stream: ReportService().getUserReports(),
             builder: (context, snapshot) {
@@ -47,10 +47,9 @@ class ProfileStats extends StatelessWidget {
 
         Expanded(
           child: _Item(
-            value: "0", // 0 como padrão para as rotas por enquanto
+            value: "0",
             label: "Routes",
             onTap: () {
-              // Um aviso provisório para quando clicar em "Rotas"
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text("O histórico de rotas estará disponível em breve!"),

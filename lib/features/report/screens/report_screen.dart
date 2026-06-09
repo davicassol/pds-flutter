@@ -15,7 +15,7 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
-  String floodLevel = "medium"; // Mudei o padrão para "medium" para casar com o banco
+  String floodLevel = "medium";
   bool isLoading = false;
 
   File? _selectedImage;
@@ -53,8 +53,6 @@ class _ReportScreenState extends State<ReportScreen> {
     }
 
     setState(() { isLoading = true; });
-
-    // 🧠 AGORA SIM! Ele vai mandar o _selectedImage preenchido corretamente
     String? erro = await ReportService().addReport(
       floodLevel: floodLevel,
       selectedLat: selectedLocation!.latitude,
@@ -82,7 +80,6 @@ class _ReportScreenState extends State<ReportScreen> {
     return Scaffold(
       body: Column(
         children: [
-          // 🛑 Header traduzido embutido
           Container(
             color: Colors.white,
             child: SafeArea(
@@ -166,8 +163,6 @@ class _ReportScreenState extends State<ReportScreen> {
                         ),
 
                         const SizedBox(height: 20),
-
-                        // 🧠 A CORREÇÃO DA FOTO: Salva a foto na variável!
                         PhotoUploadWidget(
                           photo: _selectedImage?.path,
                           onChanged: (caminhoDaFoto) {
@@ -194,8 +189,6 @@ class _ReportScreenState extends State<ReportScreen> {
                   ),
 
                   const SizedBox(height: 16),
-
-                  // Card traduzido embutido
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(

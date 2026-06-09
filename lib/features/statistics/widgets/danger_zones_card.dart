@@ -11,75 +11,79 @@ class DangerZonesCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF0F1E44),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
+          BoxShadow(color: const Color(0xFF0F1E44).withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10))
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.not_listed_location, color: Colors.redAccent),
-              SizedBox(width: 8),
-              Text("Zonas de Maior Risco", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text("Zonas de Maior Risco", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)),
+              Icon(Icons.more_horiz, color: Colors.white.withOpacity(0.5)),
             ],
           ),
-          const SizedBox(height: 4),
-          const Text("Locais com mais alertas no histórico", style: TextStyle(color: Colors.grey, fontSize: 13)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           if (provider.topDangerZones.isEmpty)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text("Nenhum histórico de alagamento nesta região.", style: TextStyle(color: Colors.grey)),
+                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                child: Text("Nenhum histórico nesta região.", style: TextStyle(color: Colors.white.withOpacity(0.5))),
               ),
             )
           else
             ...provider.topDangerZones.asMap().entries.map((entry) {
               int index = entry.key;
               Map<String, dynamic> zone = entry.value;
-              return _buildRankingRow(index + 1, zone['name'], zone['count']);
+              return _buildDarkRankingRow(index + 1, zone['name'], zone['count']);
             }),
         ],
       ),
     );
   }
 
-  Widget _buildRankingRow(int position, String name, int count) {
-    Color badgeColor = position == 1 ? Colors.red : (position == 2 ? Colors.orange : Colors.amber);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+  Widget _buildDarkRankingRow(int position, String name, int count) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16.0),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 12,
-            backgroundColor: badgeColor,
-            child: Text(position.toString(), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.map_rounded, color: Colors.white.withOpacity(0.9), size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "$count alertas reais",
+                  style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)),
+                ),
+              ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
-            child: Text("$count alertas", style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          Text(
+            "#$position",
+            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w900),
           ),
         ],
       ),

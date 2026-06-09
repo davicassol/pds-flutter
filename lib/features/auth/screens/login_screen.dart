@@ -14,11 +14,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  // Variável para controlar a tela de carregamento e evitar duplo clique
+  //variável para controlar a tela de carregamento e evitar duplo clique
   bool isLoading = false;
 
   void handleLogin() async {
-    // Evita que o usuário tente logar com os campos vazios
+    //evita que o usuário tente logar com os campos vazios
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Por favor, preencha o e-mail e a senha.")),
@@ -26,12 +26,11 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Liga a animação de carregamento
     setState(() {
       isLoading = true;
     });
 
-    // Pede para o serviço validar as credenciais lá no Google
+    //pede para o serviço validar as credenciais
     String? erro = await AuthService().signIn(
       email: emailController.text.trim(),
       password: passwordController.text.trim(),
@@ -39,7 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    //  Desliga o carregamento
     setState(() {
       isLoading = false;
     });
@@ -138,7 +136,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 12),
 
-                        // Forgot password
                         Align(
                           alignment: Alignment.centerLeft,
                           child: GestureDetector(
@@ -154,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // Se isLoading for true, mostra a bolinha girando. Se false, mostra o seu botão original.
+                        //se isLoading for true, mostra a bolinha girando. Se false, mostra o seu botão original.
                         isLoading
                             ? const CircularProgressIndicator(color: Colors.blue)
                             : SizedBox(
@@ -170,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 16),
 
-                  // SIGN UP
+                  //SIGN UP
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -192,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 24),
 
-                  // ilustração
+                  //ilustração
                   const Icon(
                     Icons.cloud,
                     size: 100,

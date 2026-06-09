@@ -6,10 +6,8 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Puxa as informações do usuário logado no Firebase
+    //puxa as informações do usuário logado no Firebase
     final user = FirebaseAuth.instance.currentUser;
-
-    // Fallbacks
     final String userName = user?.displayName ?? "Usuário";
     final String userEmail = user?.email ?? "Sem e-mail";
 

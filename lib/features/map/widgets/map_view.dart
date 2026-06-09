@@ -106,7 +106,7 @@ class _MapViewState extends State<MapView> {
     return 30.0;
   }
 
-  // Mostra os detalhes do reporte com foto
+  //mostra os detalhes do reporte com foto
   void _showReportDetails(BuildContext context, Map<String, dynamic> data) {
     final level = data['floodLevel'] ?? 'high';
     final street = data['streetName'] ?? 'Rua Desconhecida';

@@ -5,16 +5,18 @@ class LegendWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const Color brandBlue = Color(0xFF2B66F6);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95), 
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           )
         ],
       ),
@@ -22,20 +24,27 @@ class LegendWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            "Níveis de Risco",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-              color: Colors.black54,
-            ),
+          const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.analytics_outlined, color: brandBlue, size: 20),
+              SizedBox(width: 8),
+              Text(
+                "Níveis de Risco",
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  color: brandBlue,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          _buildLegendItem(Colors.red, "Alagado"),
-          const SizedBox(height: 8),
-          _buildLegendItem(Colors.orange, "Risco Médio"),
-          const SizedBox(height: 8),
-          _buildLegendItem(Colors.yellow, "Atenção"),
+          const SizedBox(height: 16),
+          _buildLegendItem(Colors.redAccent, "Alagado"),
+          const SizedBox(height: 12),
+          _buildLegendItem(Colors.orangeAccent, "Risco Médio"),
+          const SizedBox(height: 12),
+          _buildLegendItem(Colors.amber, "Atenção"),
         ],
       ),
     );
@@ -45,21 +54,26 @@ class LegendWidget extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Desenha a mancha
         Container(
-          width: 16,
-          height: 16,
+          width: 14,
+          height: 14,
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.3),
+            color: color,
             shape: BoxShape.circle,
-            border: Border.all(color: color, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.5),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),

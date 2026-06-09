@@ -4,8 +4,6 @@ import 'package:tcc_alagouai/features/report/services/report_service.dart';
 
 class MyReportsScreen extends StatelessWidget {
   const MyReportsScreen({super.key});
-
-  // Função auxiliar para as cores dos níveis
   Color _getColor(String level) {
     String safeLevel = level.toLowerCase();
     if (safeLevel == 'low') return Colors.yellow.shade800;
@@ -13,7 +11,6 @@ class MyReportsScreen extends StatelessWidget {
     return Colors.red;
   }
 
-  // Função auxiliar para traduzir o nível
   String _translateLevel(String level) {
     String safeLevel = level.toLowerCase();
     if (safeLevel == 'low') return "Atenção (Baixo)";
@@ -21,7 +18,6 @@ class MyReportsScreen extends StatelessWidget {
     return "Crítico";
   }
 
-  // Abre um alerta de segurança antes de apagar do banco
   void _confirmDelete(BuildContext context, String reportId, String? imageUrl) {
     showDialog(
       context: context,
@@ -43,9 +39,7 @@ class MyReportsScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () async {
-              Navigator.pop(context); // Fecha o dialog
-
-              // Chama o seu ReportService para deletar do Firestore e do Storage
+              Navigator.pop(context);
               await ReportService().deleteReport(reportId, imageUrl);
 
               if (context.mounted) {
@@ -72,7 +66,7 @@ class MyReportsScreen extends StatelessWidget {
         elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // 🧠 Puxa apenas os reportes do usuário logado
+        // puxa apenas os reportes do usuário logado
         stream: ReportService().getUserReports(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -84,8 +78,6 @@ class MyReportsScreen extends StatelessWidget {
               child: Text("Erro ao carregar seus reportes.", style: TextStyle(color: Colors.grey)),
             );
           }
-
-          // 🛑 ESTADO VAZIO: Se não tiver reportes, mostra algo amigável!
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(
               child: Column(
@@ -104,32 +96,26 @@ class MyReportsScreen extends StatelessWidget {
 
           final docs = snapshot.data!.docs;
 
-          // 🧠 LÓGICA DE ORDENAÇÃO: Do mais novo pro mais velho
           var sortedDocs = docs.toList();
           sortedDocs.sort((a, b) {
             var dataA = a.data() as Map<String, dynamic>;
             var dataB = b.data() as Map<String, dynamic>;
-
             Timestamp timeA = dataA['timestamp'] ?? Timestamp.now();
             Timestamp timeB = dataB['timestamp'] ?? Timestamp.now();
-
-            // Compara o B com o A para a ordem ficar decrescente (o último em cima)
             return timeB.compareTo(timeA);
           });
 
-          // 🛑 LISTA DE REPORTES
+          //lista de reportes
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: sortedDocs.length, // Usa a lista ordenada
+            itemCount: sortedDocs.length,
             itemBuilder: (context, index) {
-              var doc = sortedDocs[index]; // Usa o documento da lista ordenada
+              var doc = sortedDocs[index];
               var data = doc.data() as Map<String, dynamic>;
 
               String level = data['floodLevel'] ?? 'high';
               String street = data['streetName'] ?? 'Rua Desconhecida';
               String? imageUrl = data['imageUrl'];
-
-              // Formatação da data que vem do Firestore
               String dateStr = "";
               if (data['timestamp'] != null) {
                 DateTime date = (data['timestamp'] as Timestamp).toDate();
@@ -148,7 +134,7 @@ class MyReportsScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      // 📷 Miniatura da foto
+                      //miniatura da foto
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: imageUrl != null && imageUrl.isNotEmpty
@@ -171,7 +157,6 @@ class MyReportsScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 16),
 
-                      // 📝 Textos do Card
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +185,7 @@ class MyReportsScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // 🗑️ Botão Excluir
+                      //botão Excluir
                       IconButton(
                         icon: const Icon(Icons.delete_outline, color: Colors.red),
                         onPressed: () => _confirmDelete(context, doc.id, imageUrl),

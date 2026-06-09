@@ -78,7 +78,6 @@ class AboutHero extends StatelessWidget {
           ),
         ],
       ),
-      // 🛑 CORRIGIDO: O const desceu para cá e a cor agora é Colors.white54
       child: const Column(
         children: [
           CircleAvatar(
@@ -160,7 +159,7 @@ class TechList extends StatelessWidget {
         _TechChip("Flutter & Dart", Icons.phone_android),
         _TechChip("Firebase", Icons.cloud_done),
         _TechChip("Google Maps API", Icons.map),
-        _TechChip("Radar Octogonal", Icons.psychology),
+        _TechChip("Open Meteo API", Icons.water),
       ],
     );
   }
@@ -194,7 +193,7 @@ class VersionInfo extends StatelessWidget {
         Icon(Icons.code, color: Colors.grey.shade400),
         const SizedBox(height: 8),
         const Text(
-          "Versão 1.0.0 (TCC)",
+          "Versão 1.0.0",
           style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),

@@ -15,7 +15,7 @@ class UserService {
 
       String? photoUrl = user.photoURL;
 
-      // 1. Se o usuário escolheu uma foto nova, faz o upload pro Storage
+      //se o usuário escolheu uma foto nova, faz o upload pro Storage
       if (imageFile != null) {
         String fileName = 'perfil/${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
         Reference ref = _storage.ref().child(fileName);
@@ -24,19 +24,19 @@ class UserService {
         photoUrl = await snapshot.ref.getDownloadURL();
       }
 
-      // 2. Atualiza o perfil no Firebase Auth
+      //atualiza o perfil no Firebase Auth
       await user.updateDisplayName(name);
       if (photoUrl != null) {
         await user.updatePhotoURL(photoUrl);
       }
 
-      // 3. Atualiza também no Firestore (banco de dados) para consistência
+      //atualiza também no Firestore
       await _firestore.collection('usuarios').doc(user.uid).set({
         'nome': name,
         'fotoUrl': photoUrl,
       }, SetOptions(merge: true));
 
-      return null; // Retorna nulo se deu tudo certo
+      return null; //retorna nulo se deu tudo certo
     } catch (e) {
       return "Erro ao atualizar perfil: $e";
     }

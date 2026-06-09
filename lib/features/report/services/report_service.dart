@@ -32,6 +32,7 @@ class ReportService {
     try {
       String? currentUserId = _auth.currentUser?.uid;
       if (currentUserId == null) return "Usuário não autenticado.";
+
       bool isAdmin = false;
       try {
         DocumentSnapshot userDoc = await _firestore.collection('usuarios').doc(currentUserId).get();
@@ -75,15 +76,25 @@ class ReportService {
           return "Você está muito longe do local! Só é permitido reportar alagamentos num raio de 100 metros.";
         }
       }
+
       String? imageUrl;
       if (imageFile != null) {
         imageUrl = await _uploadImage(imageFile);
       }
 
+      //traduz as cord para cidade e rua
       List<Placemark> placemarks = await placemarkFromCoordinates(selectedLat, selectedLng);
-      String realStreetName = placemarks.isNotEmpty
-          ? (placemarks.first.street ?? "Rua Desconhecida")
-          : "Localização Selecionada";
+
+      String realStreetName = "Localização Selecionada";
+      String rawCityName = "Desconhecida";
+
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        realStreetName = place.street ?? "Rua Desconhecida";
+        //pega o nome da cidade
+        rawCityName = place.subAdministrativeArea ?? place.locality ?? "Desconhecida";
+      }
+      String cityName = rawCityName.toLowerCase();
 
       await _firestore.collection('reportes').add({
         'userId': currentUserId,
@@ -94,6 +105,7 @@ class ReportService {
         'lng': selectedLng,
         'imageUrl': imageUrl,
         'timestamp': FieldValue.serverTimestamp(),
+        'city': cityName,
       });
 
       return null; // retorna null se for sucesso

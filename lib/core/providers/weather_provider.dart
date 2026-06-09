@@ -36,7 +36,7 @@ class WeatherProvider with ChangeNotifier {
         currentLocationName = "$subLocality$currentCity";
       }
 
-      //busca os dados de chuva e temperatura na Open-Meteo
+      // Busca os dados de chuva e temperatura na Open-Meteo
       final data = await _meteoService.getWeatherData(lat, lng);
       if (data != null) {
         currentTemp = data['current']['temperature_2m'];
@@ -44,15 +44,16 @@ class WeatherProvider with ChangeNotifier {
         List<dynamic> precipitation = data['daily']['precipitation_sum'];
         weeklyRainfall = precipitation.map((e) => (e as num).toDouble()).toList();
 
-        //calcula o nível de risco com base na chuva de hoje
+        // Calcula o nível de risco com base na chuva de hoje
         _calculateRisk();
       } else {
         weeklyRainfall = List.filled(8, 0.0);
       }
 
-      //busca a quantidade de alertas reais no Firebase Firestore
+      // Busca a quantidade de alertas reais no Firebase Firestore
       await _fetchFirebaseReports();
       await _fetchDangerZones();
+
       final agora = DateTime.now();
       final minuto = agora.minute < 10 ? "0${agora.minute}" : "${agora.minute}";
       final hora = agora.hour < 10 ? "0${agora.hour}" : "${agora.hour}";
@@ -67,22 +68,29 @@ class WeatherProvider with ChangeNotifier {
     }
   }
 
-  //busca os reportes dos últimos 7 dias filtrados pela cidade atual
   Future<void> _fetchFirebaseReports() async {
     dailyReportCounts = List.filled(8, 0);
-    DateTime sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+
+    DateTime now = DateTime.now();
+    DateTime today = DateTime(now.year, now.month, now.day);
+    DateTime sevenDaysAgo = today.subtract(const Duration(days: 7));
 
     try {
       QuerySnapshot querySnapshot = await _firestore
-          .collection('reports')
-          .where('city', isEqualTo: currentCity)
-          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(sevenDaysAgo))
+          .collection('reportes')
+          .where('city', isEqualTo: currentCity.toLowerCase())
           .get();
 
       for (var doc in querySnapshot.docs) {
         if (doc.data() != null && (doc.data() as Map).containsKey('timestamp')) {
-          DateTime reportDate = (doc['timestamp'] as Timestamp).toDate();
-          int difference = DateTime.now().difference(reportDate).inDays;
+          DateTime reportFullDate = (doc['timestamp'] as Timestamp).toDate();
+          if (reportFullDate.isBefore(sevenDaysAgo)) {
+            continue;
+          }
+
+          DateTime reportDay = DateTime(reportFullDate.year, reportFullDate.month, reportFullDate.day);
+
+          int difference = today.difference(reportDay).inDays;
 
           if (difference >= 0 && difference < 8) {
             dailyReportCounts[7 - difference]++;
@@ -94,11 +102,12 @@ class WeatherProvider with ChangeNotifier {
     }
   }
 
+  //busca as zonas de perigo
   Future<void> _fetchDangerZones() async {
     try {
       QuerySnapshot querySnapshot = await _firestore
-          .collection('reports')
-          .where('city', isEqualTo: currentCity)
+          .collection('reportes')
+          .where('city', isEqualTo: currentCity.toLowerCase())
           .get();
 
       Map<String, int> locationCounts = {};
@@ -106,8 +115,8 @@ class WeatherProvider with ChangeNotifier {
       for (var doc in querySnapshot.docs) {
         if (doc.data() != null) {
           final data = doc.data() as Map<String, dynamic>;
-          //tenta pegar o endereço, se não existir tenta o bairro
-          String locationName = data['address'] ?? data['neighborhood'] ?? 'Local não especificado';
+
+          String locationName = data['streetName'] ?? data['address'] ?? data['neighborhood'] ?? 'Local não especificado';
 
           if (locationName != 'Local não especificado') {
             locationCounts[locationName] = (locationCounts[locationName] ?? 0) + 1;
@@ -117,6 +126,7 @@ class WeatherProvider with ChangeNotifier {
 
       var sortedLocations = locationCounts.keys.toList()
         ..sort((a, b) => locationCounts[b]!.compareTo(locationCounts[a]!));
+
       topDangerZones = sortedLocations.take(3).map((loc) => {
         'name': loc,
         'count': locationCounts[loc],
