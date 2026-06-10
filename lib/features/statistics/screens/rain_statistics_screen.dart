@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../widgets/correlation_chart.dart';
 import '../widgets/danger_zones_card.dart';
 import 'package:tcc_alagouai/core/providers/weather_provider.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class RainStatisticsScreen extends StatefulWidget {
   const RainStatisticsScreen({super.key});
@@ -55,19 +56,19 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFE2EFFF), Color(0xFFF4F9FF)],
+          colors: [AppColors.gradientStart, AppColors.gradientEnd],
         ),
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
           child: provider.isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF1E6FD9)))
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue))
               : provider.errorMessage != null
               ? Center(child: Text(provider.errorMessage!))
               : RefreshIndicator(
             onRefresh: _loadData,
-            color: const Color(0xFF1E6FD9),
+            color: AppColors.primaryBlue,
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               children: [
@@ -95,16 +96,16 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> {
       children: [
         const Text(
             "Monitoramento",
-            style: TextStyle(color: Color(0xFF6B82A4), fontSize: 13, fontWeight: FontWeight.w600)
+            style: TextStyle(color: AppColors.textGreyBlue, fontSize: 13, fontWeight: FontWeight.w600)
         ),
         const SizedBox(height: 4),
         Row(
           children: [
-            const Icon(Icons.location_on, color: Color(0xFF1E6FD9), size: 18),
+            const Icon(Icons.location_on, color: AppColors.primaryBlue, size: 18),
             const SizedBox(width: 4),
             Text(
               provider.currentLocationName,
-              style: const TextStyle(color: Color(0xFF0F2042), fontWeight: FontWeight.w900, fontSize: 18),
+              style: const TextStyle(color: AppColors.darkNavy, fontWeight: FontWeight.w900, fontSize: 18),
             ),
           ],
         ),
@@ -121,10 +122,10 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> {
       width: double.infinity,
       height: 170,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E6FD9),
+        color: AppColors.primaryBlue,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF1E6FD9).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))
+          BoxShadow(color: AppColors.primaryBlue.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))
         ],
       ),
       child: Stack(

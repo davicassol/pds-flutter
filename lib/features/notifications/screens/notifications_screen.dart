@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:tcc_alagouai/features/report/screens/report_screen.dart';
 import '../widgets/notifications_header.dart';
 import '../widgets/notification_card.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -25,12 +27,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   void dispose() {
-    //desliga o rastreio do GPS quando o usuário sai da tela
     _positionStream?.cancel();
     super.dispose();
   }
 
-  //Liga o radar do GPS para atualizar a cada 100 metros
   Future<void> _startLocationTracking() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -63,34 +63,66 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           _isLoadingLocation = false;
         });
       }
-      print("Erro ao ligar o radar de localização: $e");
+      debugPrint("Erro ao ligar o radar de localização: $e");
     }
   }
 
   String _timeAgo(DateTime d) {
     Duration diff = DateTime.now().difference(d);
     if (diff.inMinutes < 1) return "Agora mesmo";
-    if (diff.inMinutes < 60) return "${diff.inMinutes} min atrás";
+    if (diff.inMinutes < 60) return "${diff.inMinutes}m atrás";
     if (diff.inHours < 24) return "${diff.inHours}h atrás";
-    return "${diff.inDays} dias atrás";
+    return "${diff.inDays}d atrás";
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: Column(
-        children: [
-          const NotificationsHeader(),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.gradientStart, AppColors.gradientEnd],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
 
-          Expanded(
-            child: _isLoadingLocation
-                ? const Center(child: CircularProgressIndicator())
-                : _currentPosition == null
-                ? const Center(child: Text("Ative o GPS para ver alertas próximos."))
-                : _buildRealTimeStream(),
+        floatingActionButton: FloatingActionButton.extended(
+          backgroundColor: AppColors.primaryBlue,
+          elevation: 6,
+          icon: const Icon(Icons.add_rounded, color: Colors.white),
+          label: const Text(
+            "Reportar",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
           ),
-        ],
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ReportScreen()),
+            );
+          },
+        ),
+
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const NotificationsHeader(),
+            const SizedBox(height: 10),
+
+            Expanded(
+              child: _isLoadingLocation
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue))
+                  : _currentPosition == null
+                  ? _buildEmptyState("Ative o GPS para ver alertas próximos.", Icons.location_off_rounded)
+                  : _buildRealTimeStream(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -107,53 +139,42 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       builder: (context, snapshot) {
 
         if (snapshot.hasError) {
-          print("ERRO NO FIREBASE: ${snapshot.error}");
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Text("Erro no Banco: ${snapshot.error}", textAlign: TextAlign.center),
-            ),
-          );
+          return _buildEmptyState("Erro de conexão.", Icons.cloud_off_rounded);
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue));
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return _buildEmptyState("Nenhum alagamento reportado na última hora.");
+          return _buildEmptyState("Tudo tranquilo nas últimas horas.", Icons.done_all_rounded);
         }
 
         List<QueryDocumentSnapshot> nearbyReports = [];
 
         for (var doc in snapshot.data!.docs) {
           var data = doc.data() as Map<String, dynamic>;
-
           try {
-            //conversão de coordenadas
             double lat = (data['lat'] as num?)?.toDouble() ?? 0.0;
             double lng = (data['lng'] as num?)?.toDouble() ?? 0.0;
             double distanceInMeters = Geolocator.distanceBetween(
-              _currentPosition!.latitude,
-              _currentPosition!.longitude,
-              lat,
-              lng,
+              _currentPosition!.latitude, _currentPosition!.longitude, lat, lng,
             );
 
             if (distanceInMeters <= 5000) {
               nearbyReports.add(doc);
             }
           } catch (e) {
-            print("Erro ao processar o documento ${doc.id}: $e");
+            debugPrint("Erro ao processar o documento ${doc.id}: $e");
           }
         }
 
         if (nearbyReports.isEmpty) {
-          return _buildEmptyState("Nenhum alagamento num raio de 5 km da sua região.");
+          return _buildEmptyState("Nenhum alagamento num raio de 5km.", Icons.safety_check_rounded);
         }
-        
+
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
           itemCount: nearbyReports.length,
           itemBuilder: (context, index) {
             var data = nearbyReports[index].data() as Map<String, dynamic>;
@@ -165,12 +186,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
             String rua = data['streetName'] ?? "Local desconhecido";
             String nivelAlagamento = data['floodLevel'] ?? "high";
+            String? imagemAlagamento = data['imageUrl'];
 
             return NotificationCard(
-              title: "Alerta em $rua",
+              title: "Alerta de Alagamento",
               time: _timeAgo(reportTime),
               severity: nivelAlagamento,
               location: rua,
+              imageUrl: imagemAlagamento,
             );
           },
         );
@@ -178,16 +201,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildEmptyState(String message) {
+  Widget _buildEmptyState(String message, IconData icon) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, size: 64, color: Colors.green.withOpacity(0.5)),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 64, color: AppColors.primaryBlue.withOpacity(0.5)),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: AppColors.textGreyBlue,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600
+              ),
+            ),
           ],
         ),
       ),

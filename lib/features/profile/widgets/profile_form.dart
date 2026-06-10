@@ -50,7 +50,7 @@ class ProfileForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Email bloqueado, apenas visualização
+          //email apenas visualização
           TextField(
             enabled: false,
             controller: TextEditingController(text: email),

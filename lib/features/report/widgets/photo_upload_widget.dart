@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class PhotoUploadWidget extends StatefulWidget {
   final String? photo;
@@ -45,12 +46,12 @@ class _PhotoUploadWidgetState extends State<PhotoUploadWidget> {
 
       if (file != null) {
         setState(() {
-          _localPhoto = file.path; // atualiza a caixinha na hora
+          _localPhoto = file.path;
         });
-        widget.onChanged(file.path); // envia o caminho do ficheiro para o formulário salvar no Firebase
+        widget.onChanged(file.path);
       }
     } catch (e) {
-      debugPrint("Erro ao abrir a câmara ou capturar imagem: $e");
+      debugPrint("Erro ao abrir a câmera ou capturar imagem: $e");
     }
   }
 
@@ -66,26 +67,32 @@ class _PhotoUploadWidgetState extends State<PhotoUploadWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Foto do Alagamento",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            "Foto do Alagamento",
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.darkNavy),
+          ),
         ),
-        const SizedBox(height: 10),
         GestureDetector(
           onTap: _localPhoto == null ? _takePhotoDirectly : null,
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
             width: double.infinity,
-            height: 150,
+            height: 160,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400),
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.grey.shade50,
+              color: _localPhoto != null ? Colors.black : AppColors.primaryBlue.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _localPhoto != null ? Colors.transparent : AppColors.primaryBlue.withOpacity(0.2),
+                width: 1.5,
+              ),
             ),
             child: _localPhoto != null
                 ? Stack(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(15),
                   child: Image.file(
                     File(_localPhoto!),
                     width: double.infinity,
@@ -93,27 +100,61 @@ class _PhotoUploadWidgetState extends State<PhotoUploadWidget> {
                     fit: BoxFit.cover,
                   ),
                 ),
+                //botão de excluir
                 Positioned(
-                  top: 8,
-                  right: 8,
+                  top: 10,
+                  right: 10,
                   child: GestureDetector(
                     onTap: _removePhoto,
-                    child: const CircleAvatar(
-                      backgroundColor: Colors.red,
-                      radius: 16,
-                      child: Icon(Icons.close, color: Colors.white, size: 20),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          )
+                        ],
+                      ),
+                      child: const Icon(Icons.delete_rounded, color: AppColors.alertHigh, size: 22),
                     ),
                   ),
                 ),
               ],
             )
-                : const Center(
+                : Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.camera_alt, size: 40, color: Colors.grey),
-                  SizedBox(height: 6),
-                  Text("Toque para abrir a câmara", style: TextStyle(color: Colors.grey)),
+                  //icone flutuante
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryBlue.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.add_a_photo_rounded, size: 28, color: AppColors.primaryBlue),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "Toque para abrir a câmera",
+                    style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    "Opcional, mas ajuda muito a comunidade.",
+                    style: TextStyle(color: AppColors.textGreyBlue, fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
                 ],
               ),
             ),

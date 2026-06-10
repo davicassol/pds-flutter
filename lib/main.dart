@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
 
       initialRoute: "/",
 
-      //  ROTAS DO APP
+      //ROTAS DO APP
       routes: {
         "/": (context) => const SplashScreen(),
         "/login": (context) => const LoginScreen(),

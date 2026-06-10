@@ -109,27 +109,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 24),
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.blue.shade100),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.check_circle_outline, color: Colors.blue.shade700),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      "Suas preferências são salvas automaticamente no dispositivo.",
-                      style: TextStyle(color: Colors.blue.shade800, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // Container(
+            //   width: double.infinity,
+            //   padding: const EdgeInsets.all(16),
+            //   decoration: BoxDecoration(
+            //     color: Colors.blue.shade50,
+            //     borderRadius: BorderRadius.circular(16),
+            //     border: Border.all(color: Colors.blue.shade100),
+            //   ),
+            //   child: Row(
+            //     children: [
+            //       Icon(Icons.check_circle_outline, color: Colors.blue.shade700),
+            //       const SizedBox(width: 12),
+            //       Expanded(
+            //         child: Text(
+            //           "Suas preferências são salvas automaticamente no dispositivo.",
+            //           style: TextStyle(color: Colors.blue.shade800, fontSize: 13),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
           ],
         ),
       ),

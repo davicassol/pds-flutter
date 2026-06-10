@@ -46,9 +46,8 @@ class ReportService {
         print("Erro ao verificar status de administrador: $e");
       }
 
-      // aplica as regras se não for adm
+      //aplica as regras se não for adm (regra de 3 reportes por dia)
       if (!isAdmin) {
-        // regra de 3 reportes por dia
         DateTime now = DateTime.now();
         DateTime startOfToday = DateTime(now.year, now.month, now.day);
 
@@ -62,7 +61,7 @@ class ReportService {
           return "Você atingiu o limite máximo de 3 reportes para o dia de hoje.";
         }
 
-        // regra de distância máxima de 100 metros
+        //regra de distância máxima de 100 metros
         Position currentPosition = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
@@ -108,13 +107,13 @@ class ReportService {
         'city': cityName,
       });
 
-      return null; // retorna null se for sucesso
+      return null; //retorna null se for sucesso
     } catch (e) {
       return "Erro ao enviar reporte: $e";
     }
   }
 
-  // busca todos os reportes ativos no mapa (última 1 hora)
+  //busca todos os reportes ativos no mapa (última 1 hora)
   Stream<QuerySnapshot> getActiveReports() {
     DateTime oneHourAgo = DateTime.now().subtract(const Duration(hours: 1));
     return _firestore
@@ -132,7 +131,7 @@ class ReportService {
         .snapshots();
   }
 
-  // deleta o reporte do Firestore
+  //deleta o reporte do Firestore
   Future<void> deleteReport(String reportId, String? imageUrl) async {
     try {
       await _firestore.collection('reportes').doc(reportId).delete();

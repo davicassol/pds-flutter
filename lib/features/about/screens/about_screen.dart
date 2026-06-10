@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -6,49 +7,60 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Sobre o Projeto", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: const Text("Sobre o Projeto", style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.darkNavy)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: AppColors.darkNavy),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: const [
-              AboutHero(),
-              SizedBox(height: 24),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.gradientStart, AppColors.gradientEnd],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const AboutHero(),
+                  const SizedBox(height: 24),
 
-              AboutSection(
-                title: "Sobre o Aplicativo",
-                content:
-                "O AlagouAí foi desenvolvido para ajudar moradores e motoristas a navegarem com segurança durante eventos de inundação, combinando monitoramento colaborativo em tempo real com rotas inteligentes.",
+                  const AboutSection(
+                    title: "Sobre o Aplicativo",
+                    content:
+                    "O AlagouAí foi desenvolvido para ajudar moradores e motoristas a navegarem com segurança durante eventos de inundação, combinando monitoramento colaborativo em tempo real com rotas inteligentes.",
+                  ),
+
+                  const AboutSection(
+                    title: "Nosso Propósito",
+                    content:
+                    "Fornecer informações precisas e seguras para a população de Torres/RS durante períodos de chuvas intensas, minimizando os riscos de danos materiais e preservando vidas.",
+                  ),
+
+                  const SizedBox(height: 24),
+                  const Text(
+                    "Tecnologias Utilizadas",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.darkNavy),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+
+                  const TechList(),
+
+                  const SizedBox(height: 40),
+                  const VersionInfo(),
+                ],
               ),
-
-              AboutSection(
-                title: "Nosso Propósito",
-                content:
-                "Fornecer informações precisas e seguras para a população de Torres/RS durante períodos de chuvas intensas, minimizando os riscos de danos materiais e preservando vidas.",
-              ),
-
-              SizedBox(height: 16),
-              Text(
-                "Tecnologias Utilizadas",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 16),
-
-              TechList(),
-
-              SizedBox(height: 40),
-              VersionInfo(),
-            ],
+            ),
           ),
         ),
       ),
@@ -65,35 +77,35 @@ class AboutHero extends StatelessWidget {
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Colors.blue, Colors.blueAccent],
+          colors: [AppColors.primaryBlue, Color(0xFF4DB5F9)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: AppColors.primaryBlue.withOpacity(0.25),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 36,
             backgroundColor: Colors.white,
-            child: Icon(Icons.water_drop, color: Colors.blue, size: 36),
+            child: Icon(Icons.water_drop_rounded, color: AppColors.primaryBlue, size: 36),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            "AlagouAí",
-            style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+            AppColors.appName,
+            style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             "Mobilidade Segura em Torres",
-            style: TextStyle(color: Colors.white54, fontSize: 14),
+            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14, fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
         ],
@@ -119,12 +131,12 @@ class AboutSection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            blurRadius: 10,
-            spreadRadius: 1,
+            color: AppColors.primaryBlue.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -133,12 +145,12 @@ class AboutSection extends StatelessWidget {
         children: [
           Text(
             title,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue[800]),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.darkNavy),
           ),
           const SizedBox(height: 10),
           Text(
             content,
-            style: const TextStyle(color: Colors.black54, fontSize: 15, height: 1.4),
+            style: const TextStyle(color: AppColors.textGreyBlue, fontSize: 14, fontWeight: FontWeight.w600, height: 1.4),
           ),
         ],
       ),
@@ -156,10 +168,10 @@ class TechList extends StatelessWidget {
       runSpacing: 10,
       alignment: WrapAlignment.center,
       children: const [
-        _TechChip("Flutter & Dart", Icons.phone_android),
-        _TechChip("Firebase", Icons.cloud_done),
-        _TechChip("Google Maps API", Icons.map),
-        _TechChip("Open Meteo API", Icons.water),
+        _TechChip("Flutter & Dart", Icons.phone_android_rounded),
+        _TechChip("Firebase", Icons.cloud_done_rounded),
+        _TechChip("Google Maps API", Icons.map_rounded),
+        _TechChip("Open Meteo API", Icons.thunderstorm_rounded),
       ],
     );
   }
@@ -174,11 +186,12 @@ class _TechChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Chip(
-      avatar: Icon(icon, color: Colors.blue[700], size: 18),
-      label: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-      backgroundColor: Colors.blue.shade50,
-      side: BorderSide.none,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      avatar: Icon(icon, color: AppColors.primaryBlue, size: 18),
+      label: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.darkNavy, fontSize: 13)),
+      backgroundColor: Colors.white,
+      side: const BorderSide(color: Color(0xFFE2EFFF), width: 1.5), 
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     );
   }
 }
@@ -190,16 +203,16 @@ class VersionInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(Icons.code, color: Colors.grey.shade400),
+        const Icon(Icons.code_rounded, color: AppColors.textGreyBlue),
         const SizedBox(height: 8),
         const Text(
           "Versão 1.0.0",
-          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppColors.darkNavy, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
         Text(
           "Desenvolvido com 💙 para a comunidade",
-          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+          style: const TextStyle(color: AppColors.textGreyBlue, fontSize: 12, fontWeight: FontWeight.w600),
         ),
       ],
     );

@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tcc_alagouai/core/providers/weather_provider.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class CorrelationChart extends StatelessWidget {
   const CorrelationChart({super.key});
@@ -24,7 +25,7 @@ class CorrelationChart extends StatelessWidget {
           style: TextStyle(
               fontWeight: FontWeight.w900,
               fontSize: 18,
-              color: Color(0xFF0F2042)
+              color: AppColors.darkNavy
           ),
         ),
         const SizedBox(height: 20),
@@ -42,7 +43,7 @@ class CorrelationChart extends StatelessWidget {
                     return touchedSpots.map((spot) {
                       final isRain = spot.barIndex == 0;
 
-                      //se for chuva, exibe com 1 casa decimal (ex: 0.6)
+                      //se for chuva, exibe com 1 casa decimal
                       String textoDoBalao = isRain
                           ? spot.y.toStringAsFixed(1)
                           : (spot.y / 5).toInt().toString();
@@ -50,7 +51,7 @@ class CorrelationChart extends StatelessWidget {
                       return LineTooltipItem(
                         textoDoBalao,
                         TextStyle(
-                          color: isRain ? const Color(0xFF00B4D8) : const Color(0xFFFF006E),
+                          color: isRain ? AppColors.alertLow : AppColors.alertHigh,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -70,13 +71,13 @@ class CorrelationChart extends StatelessWidget {
                   isCurved: true,
                   //evita que o gráfico fiquei negativo
                   preventCurveOverShooting: true,
-                  color: const Color(0xFF00B4D8),
+                  color: AppColors.alertLow,
                   barWidth: 4,
                   isStrokeCapRound: true,
                   dotData: const FlDotData(show: false),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: const Color(0xFF00B4D8).withOpacity(0.15),
+                    color: AppColors.alertLow.withOpacity(0.15),
                   ),
                 ),
                 //alertas
@@ -85,7 +86,7 @@ class CorrelationChart extends StatelessWidget {
                   isCurved: true,
                   //evita que o gráfico fiquei negativo
                   preventCurveOverShooting: true,
-                  color: const Color(0xFFFF006E),
+                  color: AppColors.alertHigh,
                   barWidth: 3,
                   isStrokeCapRound: true,
                   dotData: const FlDotData(show: true),
@@ -116,7 +117,7 @@ class CorrelationChart extends StatelessWidget {
                 child: Text(
                   days[value.toInt()],
                   style: const TextStyle(
-                      color: Color(0xFF6B82A4),
+                      color: AppColors.textGreyBlue,
                       fontSize: 11,
                       fontWeight: FontWeight.bold
                   ),

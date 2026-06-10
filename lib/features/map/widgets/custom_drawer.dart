@@ -41,7 +41,7 @@ class CustomDrawer extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // foto de perfil
+                    //foto de perfil
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(
@@ -59,7 +59,7 @@ class CustomDrawer extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // nome do usuário
+                    //nome do usuário
                     Text(
                       displayName,
                       style: const TextStyle(

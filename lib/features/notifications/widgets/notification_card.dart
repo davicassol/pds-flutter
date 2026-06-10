@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class NotificationCard extends StatelessWidget {
   final String title;
   final String time;
   final String severity;
   final String location;
+  final String? imageUrl;
 
   const NotificationCard({
     super.key,
@@ -12,81 +14,125 @@ class NotificationCard extends StatelessWidget {
     required this.time,
     required this.severity,
     required this.location,
+    this.imageUrl, //é nulo se não houver foto
   });
 
-  Color getColor() {
-    switch (severity) {
-      case "high":
-        return Colors.red;
-      case "medium":
-        return Colors.orange;
-      case "low":
-        return Colors.green;
-      default:
-        return Colors.grey;
+  String getSeverityText() {
+    switch (severity.toLowerCase()) {
+      case "high": return "ALTO RISCO";
+      case "medium": return "MÉDIO";
+      case "low": return "BAIXO";
+      default: return "DESCONHECIDO";
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = getColor();
+    const cardColor = AppColors.primaryBlue;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+              color: cardColor.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8)
+          ),
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          //img ou icone de gota
           Container(
-            width: 48,
-            height: 48,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.warning, color: Colors.white),
+            // mostra a imagem ou icone de gota
+            child: imageUrl != null && imageUrl!.isNotEmpty
+                ? ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.water_drop_rounded,
+                    color: cardColor,
+                    size: 30
+                ),
+              ),
+            )
+                : const Icon(
+                Icons.water_drop_rounded,
+                color: cardColor, //gota azul
+                size: 30
+            ),
           ),
-
-          const SizedBox(width: 12),
-
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(title),
-                const SizedBox(height: 6),
-
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.access_time, size: 14, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(time, style: const TextStyle(fontSize: 12)),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(location, style: const TextStyle(fontSize: 12)),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                        time,
+                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)
+                    ),
                   ],
                 ),
-
-                const SizedBox(height: 8),
-
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: 14, color: Colors.white.withOpacity(0.8)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        location,
+                        style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                //tag de severidade
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    severity.toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                    getSeverityText(),
+                    style: const TextStyle(
+                      color: cardColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ],

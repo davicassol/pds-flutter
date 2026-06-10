@@ -5,8 +5,6 @@ import '../widgets/profile_header.dart';
 import '../widgets/profile_form.dart';
 import '../widgets/profile_stats.dart';
 import '../widgets/logout_button.dart';
-
-// ⚠️ ATENÇÃO: Ajuste este caminho se o seu user_service.dart estiver em outra pasta!
 import '../services/user_service.dart';
 
 class UserProfileScreen extends StatefulWidget {

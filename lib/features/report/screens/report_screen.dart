@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../services/report_service.dart';
-import '../widgets/flood_level_selector.dart';
 import '../widgets/photo_upload_widget.dart';
-import '../../auth/widgets/primary_button.dart';
+import '../widgets/flood_level_selector.dart';
+import '../widgets/info_card.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -47,7 +48,12 @@ class _ReportScreenState extends State<ReportScreen> {
   void handleSubmit() async {
     if (selectedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Aguarde o GPS ou toque no mapa para escolher o local.")),
+        SnackBar(
+          content: const Text("Aguarde o GPS ou toque no mapa para escolher o local.", style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.orange.shade800,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       );
       return;
     }
@@ -65,12 +71,21 @@ class _ReportScreenState extends State<ReportScreen> {
 
     if (erro == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Alagamento reportado!"), backgroundColor: Colors.green),
+        SnackBar(
+          content: const Text("Alagamento reportado com sucesso!", style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       );
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(erro), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(erro),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -78,56 +93,77 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.darkNavy),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.gradientStart, AppColors.gradientEnd],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 10),
                     const Text(
-                      "Reportar Alagamento",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                      "Reportar Alerta",
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.darkNavy,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.touch_app_rounded, color: AppColors.primaryBlue, size: 18),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            "Toque ou arraste no mapa o local exato.",
+                            style: TextStyle(
+                              color: AppColors.textGreyBlue,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
 
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5)],
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          "Toque no mapa para ajustar a localização exata",
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey),
-                          textAlign: TextAlign.center,
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(color: AppColors.primaryBlue.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 10)),
+                          ],
                         ),
-                        const SizedBox(height: 12),
-
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
                           child: SizedBox(
-                            height: 250,
+                            height: 220,
                             width: double.infinity,
                             child: GoogleMap(
                               onMapCreated: (controller) => mapController = controller,
@@ -138,6 +174,7 @@ class _ReportScreenState extends State<ReportScreen> {
                               myLocationEnabled: true,
                               myLocationButtonEnabled: true,
                               zoomControlsEnabled: false,
+                              mapToolbarEnabled: false,
                               onTap: (newPosition) {
                                 setState(() { selectedLocation = newPosition; });
                               },
@@ -154,16 +191,27 @@ class _ReportScreenState extends State<ReportScreen> {
                             ),
                           ),
                         ),
+                      ),
 
-                        const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
-                        FloodLevelSelector(
-                          selected: floodLevel,
-                          onChanged: (value) => setState(() => floodLevel = value),
+                      FloodLevelSelector(
+                        selected: floodLevel,
+                        onChanged: (value) => setState(() => floodLevel = value),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(color: AppColors.primaryBlue.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 10)),
+                          ],
                         ),
-
-                        const SizedBox(height: 20),
-                        PhotoUploadWidget(
+                        child: PhotoUploadWidget(
                           photo: _selectedImage?.path,
                           onChanged: (caminhoDaFoto) {
                             setState(() {
@@ -175,36 +223,42 @@ class _ReportScreenState extends State<ReportScreen> {
                             });
                           },
                         ),
+                      ),
 
-                        const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                        isLoading
-                            ? const CircularProgressIndicator(color: Colors.blue)
-                            : PrimaryButton(
-                          text: "Enviar Reporte",
+                      isLoading
+                          ? const CircularProgressIndicator(color: AppColors.primaryBlue)
+                          : SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryBlue,
+                            elevation: 6,
+                            shadowColor: AppColors.primaryBlue.withOpacity(0.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
                           onPressed: handleSubmit,
+                          child: const Text(
+                            "ENVIAR REPORTE",
+                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
 
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Text(
-                      "Seu reporte ajuda a manter a comunidade informada sobre os alagamentos em tempo real.",
-                      style: TextStyle(color: Colors.blue),
-                    ),
+                      const SizedBox(height: 20),
+
+                      const ReportInfoCard(),
+
+                      const SizedBox(height: 30),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
