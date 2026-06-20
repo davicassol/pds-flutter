@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class ProfileForm extends StatelessWidget {
   final bool isEditing;
@@ -22,9 +23,13 @@ class ProfileForm extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, spreadRadius: 2),
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.06),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: Column(
@@ -33,9 +38,12 @@ class ProfileForm extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Informações Pessoais", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text(
+                "Informações Pessoais",
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.darkNavy),
+              ),
               IconButton(
-                icon: Icon(isEditing ? Icons.close : Icons.edit, color: Colors.blue),
+                icon: Icon(isEditing ? Icons.close_rounded : Icons.edit_rounded, color: AppColors.primaryBlue),
                 onPressed: onEdit,
               )
             ],
@@ -44,36 +52,55 @@ class ProfileForm extends StatelessWidget {
           TextField(
             enabled: isEditing,
             controller: nameController,
+            style: const TextStyle(color: AppColors.darkNavy, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               labelText: "Nome",
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              labelStyle: const TextStyle(color: AppColors.textGreyBlue, fontWeight: FontWeight.w500),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          //email apenas visualização
           TextField(
             enabled: false,
             controller: TextEditingController(text: email),
+            style: const TextStyle(color: AppColors.textGreyBlue, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               labelText: "E-mail (Não alterável)",
+              labelStyle: const TextStyle(color: AppColors.textGreyBlue),
               filled: true,
-              fillColor: Colors.grey.shade100,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              fillColor: Colors.grey.shade50,
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.grey.shade100),
+              ),
             ),
           ),
           if (isEditing) ...[
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 52,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: AppColors.primaryBlue,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 4,
+                  shadowColor: AppColors.primaryBlue.withOpacity(0.4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: onSave,
-                child: const Text("Salvar Alterações", style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text("Salvar Alterações", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               ),
             )
           ]

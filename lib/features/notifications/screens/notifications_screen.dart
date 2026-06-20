@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tcc_alagouai/features/report/screens/report_screen.dart';
 import '../widgets/notifications_header.dart';
 import '../widgets/notification_card.dart';
@@ -17,18 +18,33 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   Position? _currentPosition;
   bool _isLoadingLocation = true;
+  bool _isLoadingPrefs = true;
+  bool _showAlerts = true;
   StreamSubscription<Position>? _positionStream;
 
   @override
   void initState() {
     super.initState();
-    _startLocationTracking();
+    _loadSettingsAndLocation();
   }
 
   @override
   void dispose() {
     _positionStream?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadSettingsAndLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _showAlerts = prefs.getBool('notifications') ?? true;
+        _isLoadingPrefs = false;
+      });
+    }
+    if (_showAlerts) {
+      _startLocationTracking();
+    }
   }
 
   Future<void> _startLocationTracking() async {
@@ -42,6 +58,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         if (permission == LocationPermission.denied) throw Exception('Permissão negada');
       }
 
+      //pega a localização atual na hora
+      Position initialPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      if (mounted) {
+        setState(() {
+          _currentPosition = initialPosition;
+          _isLoadingLocation = false;
+        });
+      }
+
+      //deixa o stream ativo para atualizar caso o usuário mude de lugar
       LocationSettings locationSettings = const LocationSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 100,
@@ -52,7 +81,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         if (mounted) {
           setState(() {
             _currentPosition = position;
-            _isLoadingLocation = false;
           });
         }
       });
@@ -115,8 +143,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             const SizedBox(height: 10),
 
             Expanded(
-              child: _isLoadingLocation
+              child: (_isLoadingPrefs || (_showAlerts && _isLoadingLocation))
                   ? const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue))
+                  : !_showAlerts
+                  ? _buildEmptyState("Os alertas de alagamento estão desativados nas configurações.", Icons.notifications_off_rounded)
                   : _currentPosition == null
                   ? _buildEmptyState("Ative o GPS para ver alertas próximos.", Icons.location_off_rounded)
                   : _buildRealTimeStream(),

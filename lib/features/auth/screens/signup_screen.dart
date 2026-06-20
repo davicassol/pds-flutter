@@ -98,7 +98,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        "Create Account",
+                        "Criar Conta",
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -125,7 +125,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        "Join FloodWatch today",
+                        "Junte-se ao FloodWatch",
                         style: TextStyle(color: Colors.grey),
                       ),
                     ],
@@ -151,28 +151,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         TextField(
                           controller: nameController,
                           textCapitalization: TextCapitalization.words, // Ajuda a iniciar o nome com Maiúscula
-                          decoration: buildInputDecoration("Full Name", "John Doe"),
+                          decoration: buildInputDecoration("Nome Completo", "João Pedro"),
                         ),
                         const SizedBox(height: 16),
 
                         TextField(
                           controller: emailController,
                           keyboardType: TextInputType.emailAddress,
-                          decoration: buildInputDecoration("Email", "your.email@example.com"),
+                          decoration: buildInputDecoration("Email", "seu.email@exemplo.com"),
                         ),
                         const SizedBox(height: 16),
 
                         TextField(
                           controller: passwordController,
                           obscureText: true,
-                          decoration: buildInputDecoration("Password", "••••••••"),
+                          decoration: buildInputDecoration("Senha", "••••••••"),
                         ),
                         const SizedBox(height: 16),
 
                         TextField(
                           controller: confirmPasswordController,
                           obscureText: true,
-                          decoration: buildInputDecoration("Confirm Password", "••••••••"),
+                          decoration: buildInputDecoration("Senha Confirmada", "••••••••"),
                         ),
 
                         const SizedBox(height: 24),
@@ -194,7 +194,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 height: 24,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                                 : const Text(
-                              "Create Account",
+                              "Criar Conta",
                               style: TextStyle(fontSize: 16, color: Colors.white),
                             ),
                           ),
@@ -209,11 +209,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Already have an account? "),
+                      const Text("Já possui uma conta? "),
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: const Text(
-                          "Login",
+                          "Entrar",
                           style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                         ),
                       ),

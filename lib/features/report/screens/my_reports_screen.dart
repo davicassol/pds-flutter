@@ -5,6 +5,7 @@ import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class MyReportsScreen extends StatelessWidget {
   const MyReportsScreen({super.key});
+
   Color _getColor(String level) {
     String safeLevel = level.toLowerCase();
     if (safeLevel == 'low') return AppColors.alertLow;
@@ -73,11 +74,11 @@ class MyReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true, //para o gradiente vazar por trás da AppBar
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.darkNavy), //seta de voltar
+        iconTheme: const IconThemeData(color: AppColors.darkNavy),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -117,7 +118,6 @@ class MyReportsScreen extends StatelessWidget {
                 ),
               ),
 
-              //lista de peportes
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: ReportService().getUserReports(),
@@ -162,6 +162,7 @@ class MyReportsScreen extends StatelessWidget {
                         }
 
                         const cardColor = AppColors.primaryBlue;
+                        final levelColor = _getColor(level);
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -179,7 +180,6 @@ class MyReportsScreen extends StatelessWidget {
                           ),
                           child: Row(
                             children: [
-                              //miniatura da foto ou icone
                               Container(
                                 width: 56,
                                 height: 56,
@@ -208,7 +208,6 @@ class MyReportsScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 16),
 
-                              //textos
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,29 +231,42 @@ class MyReportsScreen extends StatelessWidget {
                                       ),
                                     ),
                                     const SizedBox(height: 10),
-
-                                    //tag de severidade
+                                    
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: Text(
-                                        _translateLevel(level),
-                                        style: TextStyle(
-                                          color: cardColor,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 0.5,
-                                        ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          //bolinha de status
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: levelColor,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            _translateLevel(level),
+                                            style: const TextStyle(
+                                              color: AppColors.darkNavy,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
 
-                              //botão de excluir
                               Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.15),
@@ -279,7 +291,7 @@ class MyReportsScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildEmptyState(String message, IconData icon) {
     return Center(
       child: Padding(
@@ -290,7 +302,7 @@ class MyReportsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color:  AppColors.primaryBlue.withOpacity(0.05),
+                color: AppColors.primaryBlue.withOpacity(0.05),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 64, color: AppColors.primaryBlue.withOpacity(0.5)),

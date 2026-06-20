@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tcc_alagouai/features/report/services/report_service.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 import 'legend_widget.dart';
 
 class MapView extends StatefulWidget {
@@ -94,9 +95,9 @@ class _MapViewState extends State<MapView> {
 
   Color _getColor(String level) {
     String safeLevel = level.toLowerCase();
-    if (safeLevel == 'low') return Colors.yellow;
-    if (safeLevel == 'medium') return Colors.orange;
-    return Colors.red;
+    if (safeLevel == 'low') return AppColors.alertLow;
+    if (safeLevel == 'medium') return AppColors.alertMedium;
+    return AppColors.alertHigh;
   }
 
   double _getRadius(String level) {
@@ -106,122 +107,139 @@ class _MapViewState extends State<MapView> {
     return 30.0;
   }
 
-  //mostra os detalhes do reporte com foto
   void _showReportDetails(BuildContext context, Map<String, dynamic> data) {
     final level = data['floodLevel'] ?? 'high';
     final street = data['streetName'] ?? 'Rua Desconhecida';
     final imageUrl = data['imageUrl'];
     final userName = data['userName'] ?? 'Anônimo';
 
-    String nivelTraduzido = "Crítico";
-    if (level.toLowerCase() == 'low') nivelTraduzido = "Atenção (Baixo)";
-    if (level.toLowerCase() == 'medium') nivelTraduzido = "Risco Médio";
+    final severityColor = _getColor(level);
+    final String nivelTraduzido = level.toLowerCase() == 'low'
+        ? "BAIXO RISCO"
+        : (level.toLowerCase() == 'medium' ? "MÉDIO RISCO" : "ALTO RISCO");
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
                 child: Container(
-                  width: 50,
+                  width: 40,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: AppColors.primaryBlue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Nível: $nivelTraduzido",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: _getColor(level),
+              const SizedBox(height: 24),
+
+              //Tag de Severidade com a Bolinha
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: severityColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(color: severityColor, shape: BoxShape.circle),
                     ),
-                  ),
-                  const Icon(Icons.water_drop, color: Colors.blue),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                street,
-                style: const TextStyle(fontSize: 16, color: Colors.black87),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "Reportado por: $userName",
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 8),
+                    Text(
+                      nivelTraduzido,
+                      style: TextStyle(
+                        color: severityColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
+              //Nome da rua em destaque
+              Text(
+                street,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.darkNavy,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              //Identificação do usuário criador do alerta
+              Row(
+                children: [
+                  const Icon(Icons.person_pin_circle_rounded, size: 16, color: AppColors.textGreyBlue),
+                  const SizedBox(width: 6),
+                  Text(
+                    "Reportado por: $userName",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textGreyBlue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              //Renderização inteligente da imagem
               if (imageUrl != null && imageUrl.toString().isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: 250,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: 250,
-                        width: double.infinity,
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 250,
-                        width: double.infinity,
-                        color: Colors.grey[200],
-                        child: const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                            SizedBox(height: 8),
-                            Text("Erro ao carregar imagem", style: TextStyle(color: Colors.grey)),
-                          ],
-                        ),
-                      );
-                    },
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.darkNavy.withOpacity(0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.network(
+                      imageUrl,
+                      width: double.infinity,
+                      height: 280,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          height: 280,
+                          width: double.infinity,
+                          color: Colors.grey[50],
+                          child: const Center(
+                            child: CircularProgressIndicator(color: AppColors.primaryBlue),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
+                    ),
                   ),
                 )
               else
-                Container(
-                  height: 120,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300)
-                  ),
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                      SizedBox(height: 8),
-                      Text("Sem foto disponível", style: TextStyle(color: Colors.grey)),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 16),
+                _buildImagePlaceholder(),
             ],
           ),
         );
@@ -229,11 +247,39 @@ class _MapViewState extends State<MapView> {
     );
   }
 
+  //Placeholder moderno para reportes que não possuem foto
+  Widget _buildImagePlaceholder() {
+    return Container(
+      height: 160,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.primaryBlue.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.08), width: 2),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.image_not_supported_rounded, size: 48, color: AppColors.primaryBlue.withOpacity(0.15)),
+          const SizedBox(height: 12),
+          Text(
+            "Nenhuma evidência visual anexada",
+            style: TextStyle(
+              color: AppColors.primaryBlue.withOpacity(0.4),
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isInitializing) {
       return const Center(
-        child: CircularProgressIndicator(color: Colors.blue),
+        child: CircularProgressIndicator(color: AppColors.primaryBlue),
       );
     }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class SettingsToggle extends StatelessWidget {
   final String title;
@@ -16,11 +17,18 @@ class SettingsToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SwitchListTile(
+    return SwitchListTile.adaptive(
       value: value,
       onChanged: onChanged,
-      title: Text(title),
-      subtitle: Text(subtitle),
+      title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.darkNavy)
+      ),
+      subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: AppColors.textGreyBlue, fontWeight: FontWeight.w500)
+      ),
+      activeColor: AppColors.primaryBlue,
       contentPadding: EdgeInsets.zero,
     );
   }

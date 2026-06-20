@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        "Stay Safe, Stay Informed",
+                        "Esteja Seguro, Esteja Informado",
                         style: TextStyle(color: Colors.grey),
                       ),
                     ],
@@ -123,12 +123,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         CustomTextField(
                           label: "Email",
-                          hint: "your.email@example.com",
+                          hint: "seu.email@exemplo.com",
                           controller: emailController,
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(
-                          label: "Password",
+                          label: "Senha",
                           hint: "••••••••",
                           controller: passwordController,
                           isPassword: true,
@@ -143,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               // TODO: implementar recuperação de senha
                             },
                             child: const Text(
-                              "Forgot Password?",
+                              "Esqueceu sua senha?",
                               style: TextStyle(color: Colors.blue),
                             ),
                           ),
@@ -157,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             : SizedBox(
                           width: double.infinity,
                           child: PrimaryButton(
-                            text: "Login",
+                            text: "Entrar",
                             onPressed: handleLogin,
                           ),
                         ),
@@ -171,13 +171,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Don't have an account? "),
+                      const Text("Não possui uma conta? "),
                       GestureDetector(
                         onTap: () {
                           Navigator.pushNamed(context, '/signup');
                         },
                         child: const Text(
-                          "Create Account",
+                          "Criar Conta",
                           style: TextStyle(
                             color: Colors.blue,
                             fontWeight: FontWeight.bold,
