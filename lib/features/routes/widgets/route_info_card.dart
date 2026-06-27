@@ -3,8 +3,15 @@ import 'package:tcc_alagouai/features/routes/services/route_service.dart';
 
 class RouteInfoCard extends StatelessWidget {
   final SafeRouteResult routeData;
+  final bool isNavigating;
+  final VoidCallback onToggleNavigation;
 
-  const RouteInfoCard({super.key, required this.routeData});
+  const RouteInfoCard({
+    super.key,
+    required this.routeData,
+    required this.isNavigating,
+    required this.onToggleNavigation,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +63,29 @@ class RouteInfoCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isNavigating ? Colors.redAccent : const Color(0xFF2B66F6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+              onPressed: onToggleNavigation,
+              icon: Icon(
+                  isNavigating ? Icons.close_rounded : Icons.navigation_rounded,
+                  color: Colors.white
+              ),
+              label: Text(
+                  isNavigating ? "Sair da Navegação" : "Iniciar Rota",
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)
+              ),
             ),
           )
         ],

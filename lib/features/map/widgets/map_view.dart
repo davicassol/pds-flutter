@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -10,8 +12,8 @@ import 'legend_widget.dart';
 
 class MapView extends StatefulWidget {
   final SafeRouteResult? activeRoute;
-
-  const MapView({super.key, this.activeRoute});
+  final bool isNavigating;
+  const MapView({super.key, this.activeRoute, this.isNavigating = false});
 
   @override
   State<MapView> createState() => _MapViewState();
@@ -23,12 +25,46 @@ class _MapViewState extends State<MapView> {
   bool _isInitializing = true;
   LatLng _userInitialPosition = const LatLng(-29.3385, -49.7291);
 
+  BitmapDescriptor? setaNavegacao;
+  Position? _currentPosition;
+
   StreamSubscription<Position>? _positionStreamSubscription;
 
   @override
   void initState() {
     super.initState();
+    _createNavigationIcon(); //desenha a seta ao iniciar a tela
     _startLocationUpdates();
+  }
+
+  //função que converte o ícone nativo do flutter em uma imagem para o Google Maps
+  Future<void> _createNavigationIcon() async {
+    final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(pictureRecorder);
+    const double size = 80.0;
+
+    TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+    textPainter.text = TextSpan(
+      text: String.fromCharCode(Icons.navigation.codePoint),
+      style: TextStyle(
+        fontSize: size,
+        fontFamily: Icons.navigation.fontFamily,
+        color: const Color(0xFF2B66F6),
+      ),
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, const Offset(0.0, 0.0));
+
+    final ui.Image img = await pictureRecorder.endRecording().toImage(size.toInt(), size.toInt());
+    final ByteData? data = await img.toByteData(format: ui.ImageByteFormat.png);
+
+    if (data != null) {
+      if (mounted) {
+        setState(() {
+          setaNavegacao = BitmapDescriptor.fromBytes(data.buffer.asUint8List());
+        });
+      }
+    }
   }
 
   @override
@@ -38,6 +74,13 @@ class _MapViewState extends State<MapView> {
       _fitRouteOnMap();
     } else if (widget.activeRoute == null && oldWidget.activeRoute != null) {
       _moveCameraToUser();
+    }
+
+    //usuário apertou "Iniciar" ou "Sair"
+    if (widget.isNavigating && !oldWidget.isNavigating) {
+      _moveCameraToUser(force3D: true); //pula para a visão 3D
+    } else if (!widget.isNavigating && oldWidget.isNavigating) {
+      _fitRouteOnMap(); //volta a ver a rota toda de cima
     }
   }
 
@@ -61,15 +104,30 @@ class _MapViewState extends State<MapView> {
       northeast: LatLng(maxLat, maxLng),
     );
 
+    //modo normal o tilt é 0 (visto de cima) e bearing é 0 (norte pra cima)
     mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
 
-  Future<void> _moveCameraToUser() async {
+  Future<void> _moveCameraToUser({bool force3D = false}) async {
     try {
       Position position = await Geolocator.getCurrentPosition();
-      mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(LatLng(position.latitude, position.longitude), 16.0),
-      );
+
+      if (force3D || widget.isNavigating) {
+        mapController?.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(position.latitude, position.longitude),
+              zoom: 18.5,
+              tilt: 60.0, // Efeito 3D
+              bearing: position.heading > 0 ? position.heading : 0.0,
+            ),
+          ),
+        );
+      } else {
+        mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(LatLng(position.latitude, position.longitude), 16.0),
+        );
+      }
     } catch (e) {
       debugPrint("Erro ao mover para usuário: $e");
     }
@@ -118,10 +176,20 @@ class _MapViewState extends State<MapView> {
     _positionStreamSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10,
+        distanceFilter: 5, //atualiza a cada 5 metros para a câmera 3D ficar fluida
       ),
     ).listen((Position position) {
-      if (widget.activeRoute == null) {
+
+      // Guarda a posição para desenhar a seta
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+      }
+
+      if (widget.isNavigating) {
+        _moveCameraToPosition(position);
+      } else if (widget.activeRoute == null) {
         _moveCameraToPosition(position);
       }
     });
@@ -129,12 +197,25 @@ class _MapViewState extends State<MapView> {
 
   void _moveCameraToPosition(Position position) {
     if (mapController != null) {
-      mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(position.latitude, position.longitude),
-          16.0,
-        ),
-      );
+      if (widget.isNavigating) {
+        mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(position.latitude, position.longitude),
+              zoom: 18.5,
+              tilt: 60.0,
+              bearing: position.heading, //mapa gira com o usuário
+            ),
+          ),
+        );
+      } else {
+        mapController!.animateCamera(
+          CameraUpdate.newLatLngZoom(
+            LatLng(position.latitude, position.longitude),
+            16.0,
+          ),
+        );
+      }
     }
   }
 
@@ -186,7 +267,7 @@ class _MapViewState extends State<MapView> {
                   width: 40,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: AppColors.primaryBlue.withOpacity(0.1),
+                    color: AppColors.primaryBlue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -195,7 +276,7 @@ class _MapViewState extends State<MapView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: severityColor.withOpacity(0.1),
+                  color: severityColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -222,7 +303,7 @@ class _MapViewState extends State<MapView> {
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: AppColors.darkNavy.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 10))],
+                    boxShadow: [BoxShadow(color: AppColors.darkNavy.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 10))],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
@@ -246,16 +327,16 @@ class _MapViewState extends State<MapView> {
       height: 160,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.primaryBlue.withOpacity(0.04),
+        color: AppColors.primaryBlue.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.08), width: 2),
+        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.08), width: 2),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.image_not_supported_rounded, size: 48, color: AppColors.primaryBlue.withOpacity(0.15)),
+          Icon(Icons.image_not_supported_rounded, size: 48, color: AppColors.primaryBlue.withValues(alpha: 0.15)),
           const SizedBox(height: 12),
-          Text("Nenhuma evidência visual anexada", style: TextStyle(color: AppColors.primaryBlue.withOpacity(0.4), fontWeight: FontWeight.w700, fontSize: 13)),
+          Text("Nenhuma evidência visual anexada", style: TextStyle(color: AppColors.primaryBlue.withValues(alpha: 0.4), fontWeight: FontWeight.w700, fontSize: 13)),
         ],
       ),
     );
@@ -299,7 +380,7 @@ class _MapViewState extends State<MapView> {
                 circleId: CircleId("circle_${doc.id}"),
                 center: pos,
                 radius: _getRadius(level),
-                fillColor: _getColor(level).withOpacity(0.3),
+                fillColor: _getColor(level).withValues(alpha: 0.3),
                 strokeColor: _getColor(level),
                 strokeWidth: 2,
               ));
@@ -320,14 +401,28 @@ class _MapViewState extends State<MapView> {
           ));
         }
 
+        //desenha a seta (usuário)
+        if (_currentPosition != null && setaNavegacao != null) {
+          markers.add(Marker(
+            markerId: const MarkerId('current_user_location'),
+            position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+            rotation: _currentPosition!.heading,
+            icon: setaNavegacao!,
+            anchor: const Offset(0.5, 0.5), //centraliza
+            zIndex: 999,
+          ));
+        }
+
         return Stack(
           children: [
             GoogleMap(
               onMapCreated: _onMapCreated,
               initialCameraPosition: CameraPosition(target: _userInitialPosition, zoom: 16.0),
-              myLocationEnabled: true,
+              myLocationEnabled: false,
               myLocationButtonEnabled: false,
               zoomControlsEnabled: false,
+              compassEnabled: true,
+              buildingsEnabled: false,
               markers: markers,
               circles: circles,
               polylines: {
@@ -341,25 +436,28 @@ class _MapViewState extends State<MapView> {
               },
             ),
 
-            //botão de loc personalizado
-            Positioned(
-              bottom: widget.activeRoute != null ? 230 : 90,
-              right: 16,
-              child: FloatingActionButton(
-                heroTag: "my_location_btn",
-                elevation: 4,
-                backgroundColor: Colors.white.withOpacity(0.9),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            //botão de localização esconde se estiver navegando
+            if (!widget.isNavigating)
+              Positioned(
+                bottom: widget.activeRoute != null ? 240 : 90,
+                right: 16,
+                child: FloatingActionButton(
+                  heroTag: "my_location_btn",
+                  elevation: 4,
+                  backgroundColor: Colors.white.withValues(alpha: 0.9),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  onPressed: () {
+                    _moveCameraToUser();
+                  },
+                  child: const Icon(Icons.my_location_rounded, color: Colors.black87, size: 26),
                 ),
-                onPressed: () {
-                  _moveCameraToUser();
-                },
-                child: const Icon(Icons.my_location_rounded, color: Colors.black87, size: 26),
               ),
-            ),
 
-            const Positioned(bottom: 22, left: 32, child: LegendWidget()),
+            //esconde a legenda para limpar mapa
+            if (!widget.isNavigating)
+              const Positioned(bottom: 22, left: 32, child: LegendWidget()),
           ],
         );
       },
