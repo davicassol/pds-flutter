@@ -11,25 +11,37 @@ class RouteInfoCard extends StatelessWidget {
     bool isCompletelySafe = routeData.floodsCrossed == 0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _InfoItem("Tempo", routeData.duration), // Tempo real do Google
-              _InfoItem("Distância", routeData.distance), // Distância real
+              _InfoItem("Tempo", routeData.duration),
+              _InfoItem("Distância", routeData.distance),
               _StatusBadge(isSafe: isCompletelySafe),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isCompletelySafe ? Colors.green[50] : Colors.orange[50],
@@ -41,7 +53,7 @@ class RouteInfoCard extends StatelessWidget {
                   : "Cuidado: Esta rota cruza ${routeData.floodsCrossed} ponto(s) de alagamento.",
               style: TextStyle(
                 color: isCompletelySafe ? Colors.green[700] : Colors.orange[800],
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
             ),
@@ -61,8 +73,9 @@ class _InfoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black87)),
       ],
     );
   }
@@ -79,7 +92,7 @@ class _StatusBadge extends StatelessWidget {
         Icon(
             isSafe ? Icons.check_circle : Icons.warning_rounded,
             color: isSafe ? Colors.green : Colors.orange,
-            size: 16
+            size: 18
         ),
         const SizedBox(width: 4),
         Text(

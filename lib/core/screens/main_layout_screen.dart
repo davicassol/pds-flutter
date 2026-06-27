@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../features/map/screens/home_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
-import '../../features/routes/screens/route_screen.dart';
 import '../../features/statistics/screens/rain_statistics_screen.dart';
 
 class MainLayoutScreen extends StatefulWidget {
@@ -14,7 +13,7 @@ class MainLayoutScreen extends StatefulWidget {
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _currentIndex = 0;
 
-  //chave de controle para a tela de notificações
+  //Chave de controle para a tela de notificações
   Key _notificationsKey = UniqueKey();
 
   @override
@@ -25,7 +24,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         children: [
           const HomeScreen(),
           NotificationsScreen(key: _notificationsKey),
-          const RouteScreen(),
           const RainStatisticsScreen(),
         ],
       ),
@@ -44,9 +42,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           });
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Início"),
+          BottomNavigationBarItem(icon: Icon(Icons.map_rounded), label: "Mapa"),
           BottomNavigationBarItem(icon: Icon(Icons.notifications), label: "Alertas"),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Rotas"),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: "Dados"),
         ],
       ),

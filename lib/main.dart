@@ -9,9 +9,7 @@ import 'features/auth/screens/signup_screen.dart';
 import 'features/map/screens/home_screen.dart';
 import 'features/report/screens/report_screen.dart';
 import 'features/notifications/screens/notifications_screen.dart';
-import 'features/routes/screens/route_screen.dart';
 import 'features/statistics/screens/rain_statistics_screen.dart';
-import 'features/prediction/screens/flood_risk_screen.dart';
 import 'features/profile/screens/user_profile_screen.dart';
 import 'features/settings/screens/settings_screen.dart';
 import 'features/about/screens/about_screen.dart';
@@ -66,9 +64,7 @@ class MyApp extends StatelessWidget {
         "/home": (context) => const MainLayoutScreen(),
         "/report": (context) => const ReportScreen(),
         "/notifications": (context) => const NotificationsScreen(),
-        "/route": (context) => const RouteScreen(),
         "/statistics": (context) => const RainStatisticsScreen(),
-        "/prediction": (context) => const FloodRiskScreen(),
         "/profile": (context) => const UserProfileScreen(),
         "/settings": (context) => const SettingsScreen(),
         "/about": (context) => const AboutScreen(),

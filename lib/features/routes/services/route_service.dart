@@ -79,7 +79,7 @@ class RouteService {
 
       if (detourAttempt != null) {
         if (detourAttempt.floodsCrossed == 0) {
-          print("DESVIO PERFEITO ENCONTRADO! Contornando o alagamento");
+          print("Desvio Encontrado! Contornando o alagamento");
           return detourAttempt;
         }
 
@@ -144,8 +144,8 @@ class RouteService {
             var flood = activeFloods[i];
             String safeLevel = (flood['floodLevel'] ?? 'high').toLowerCase();
 
-            // Margens de colisão
-            double tolerance = safeLevel == 'low' ? 30.0 : (safeLevel == 'medium' ? 50.0 : 80.0);
+            //Margens de colisão
+            double tolerance = safeLevel == 'low' ? 15.0 : (safeLevel == 'medium' ? 20.0 : 30.0);
 
             if (_isPointInFlood(coord, flood['lat'], flood['lng'], tolerance)) {
               floodsHit.add(i);

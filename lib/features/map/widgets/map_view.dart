@@ -5,10 +5,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tcc_alagouai/features/report/services/report_service.dart';
 import 'package:tcc_alagouai/core/constants/app_colors.dart';
+import 'package:tcc_alagouai/features/routes/services/route_service.dart';
 import 'legend_widget.dart';
 
 class MapView extends StatefulWidget {
-  const MapView({super.key});
+  final SafeRouteResult? activeRoute;
+
+  const MapView({super.key, this.activeRoute});
 
   @override
   State<MapView> createState() => _MapViewState();
@@ -26,6 +29,50 @@ class _MapViewState extends State<MapView> {
   void initState() {
     super.initState();
     _startLocationUpdates();
+  }
+
+  @override
+  void didUpdateWidget(covariant MapView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.activeRoute != oldWidget.activeRoute && widget.activeRoute != null) {
+      _fitRouteOnMap();
+    } else if (widget.activeRoute == null && oldWidget.activeRoute != null) {
+      _moveCameraToUser();
+    }
+  }
+
+  void _fitRouteOnMap() {
+    if (widget.activeRoute == null || widget.activeRoute!.points.isEmpty || mapController == null) return;
+
+    double minLat = widget.activeRoute!.points.first.latitude;
+    double minLng = widget.activeRoute!.points.first.longitude;
+    double maxLat = widget.activeRoute!.points.first.latitude;
+    double maxLng = widget.activeRoute!.points.first.longitude;
+
+    for (var point in widget.activeRoute!.points) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLng) minLng = point.longitude;
+      if (point.longitude > maxLng) maxLng = point.longitude;
+    }
+
+    LatLngBounds bounds = LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+
+    mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
+  }
+
+  Future<void> _moveCameraToUser() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition();
+      mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(position.latitude, position.longitude), 16.0),
+      );
+    } catch (e) {
+      debugPrint("Erro ao mover para usuário: $e");
+    }
   }
 
   @override
@@ -74,7 +121,9 @@ class _MapViewState extends State<MapView> {
         distanceFilter: 10,
       ),
     ).listen((Position position) {
-      _moveCameraToPosition(position);
+      if (widget.activeRoute == null) {
+        _moveCameraToPosition(position);
+      }
     });
   }
 
@@ -143,8 +192,6 @@ class _MapViewState extends State<MapView> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              //Tag de Severidade com a Bolinha
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -154,86 +201,33 @@ class _MapViewState extends State<MapView> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(color: severityColor, shape: BoxShape.circle),
-                    ),
+                    Container(width: 8, height: 8, decoration: BoxDecoration(color: severityColor, shape: BoxShape.circle)),
                     const SizedBox(width: 8),
-                    Text(
-                      nivelTraduzido,
-                      style: TextStyle(
-                        color: severityColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                    Text(nivelTraduzido, style: TextStyle(color: severityColor, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
-
-              //Nome da rua em destaque
-              Text(
-                street,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.darkNavy,
-                  height: 1.1,
-                ),
-              ),
+              Text(street, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.darkNavy, height: 1.1)),
               const SizedBox(height: 8),
-
-              //Identificação do usuário criador do alerta
               Row(
                 children: [
                   const Icon(Icons.person_pin_circle_rounded, size: 16, color: AppColors.textGreyBlue),
                   const SizedBox(width: 6),
-                  Text(
-                    "Reportado por: $userName",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textGreyBlue,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  Text("Reportado por: $userName", style: const TextStyle(fontSize: 14, color: AppColors.textGreyBlue, fontWeight: FontWeight.w600)),
                 ],
               ),
               const SizedBox(height: 24),
-
-              //Renderização inteligente da imagem
               if (imageUrl != null && imageUrl.toString().isNotEmpty)
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.darkNavy.withOpacity(0.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+                    boxShadow: [BoxShadow(color: AppColors.darkNavy.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 10))],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Image.network(
-                      imageUrl,
-                      width: double.infinity,
-                      height: 280,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          height: 280,
-                          width: double.infinity,
-                          color: Colors.grey[50],
-                          child: const Center(
-                            child: CircularProgressIndicator(color: AppColors.primaryBlue),
-                          ),
-                        );
-                      },
+                      imageUrl, width: double.infinity, height: 280, fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
                     ),
                   ),
@@ -247,7 +241,6 @@ class _MapViewState extends State<MapView> {
     );
   }
 
-  //Placeholder moderno para reportes que não possuem foto
   Widget _buildImagePlaceholder() {
     return Container(
       height: 160,
@@ -262,14 +255,7 @@ class _MapViewState extends State<MapView> {
         children: [
           Icon(Icons.image_not_supported_rounded, size: 48, color: AppColors.primaryBlue.withOpacity(0.15)),
           const SizedBox(height: 12),
-          Text(
-            "Nenhuma evidência visual anexada",
-            style: TextStyle(
-              color: AppColors.primaryBlue.withOpacity(0.4),
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-            ),
-          ),
+          Text("Nenhuma evidência visual anexada", style: TextStyle(color: AppColors.primaryBlue.withOpacity(0.4), fontWeight: FontWeight.w700, fontSize: 13)),
         ],
       ),
     );
@@ -278,9 +264,7 @@ class _MapViewState extends State<MapView> {
   @override
   Widget build(BuildContext context) {
     if (_isInitializing) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primaryBlue),
-      );
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue));
     }
 
     return StreamBuilder<QuerySnapshot>(
@@ -292,26 +276,23 @@ class _MapViewState extends State<MapView> {
         if (snapshot.hasData) {
           for (var doc in snapshot.data!.docs) {
             final data = doc.data() as Map<String, dynamic>;
-
             if (data['lat'] != null && data['lng'] != null) {
               final pos = LatLng(data['lat'], data['lng']);
               final level = data['floodLevel'] ?? 'high';
 
-              double markerColor = BitmapDescriptor.hueRed;
+              double markerHue = BitmapDescriptor.hueRed; //Alto Risco (Vermelho)
 
               if (level.toLowerCase() == 'low') {
-                markerColor = BitmapDescriptor.hueYellow;
+                markerHue = BitmapDescriptor.hueCyan; //Baixo Risco (Azul Claro)
               } else if (level.toLowerCase() == 'medium') {
-                markerColor = BitmapDescriptor.hueOrange;
+                markerHue = BitmapDescriptor.hueOrange; //Médio Risco (Laranja)
               }
 
               markers.add(Marker(
                 markerId: MarkerId(doc.id),
                 position: pos,
-                icon: BitmapDescriptor.defaultMarkerWithHue(markerColor),
-                onTap: () {
-                  _showReportDetails(context, data);
-                },
+                icon: BitmapDescriptor.defaultMarkerWithHue(markerHue),
+                onTap: () => _showReportDetails(context, data),
               ));
 
               circles.add(Circle(
@@ -326,25 +307,59 @@ class _MapViewState extends State<MapView> {
           }
         }
 
+        if (widget.activeRoute != null && widget.activeRoute!.points.isNotEmpty) {
+          markers.add(Marker(
+            markerId: const MarkerId('start_point'),
+            position: widget.activeRoute!.points.first,
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          ));
+          markers.add(Marker(
+            markerId: const MarkerId('end_point'),
+            position: widget.activeRoute!.points.last,
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+          ));
+        }
+
         return Stack(
           children: [
             GoogleMap(
               onMapCreated: _onMapCreated,
-              initialCameraPosition: CameraPosition(
-                target: _userInitialPosition,
-                zoom: 16.0,
-              ),
+              initialCameraPosition: CameraPosition(target: _userInitialPosition, zoom: 16.0),
               myLocationEnabled: true,
-              myLocationButtonEnabled: true,
+              myLocationButtonEnabled: false,
               zoomControlsEnabled: false,
               markers: markers,
               circles: circles,
+              polylines: {
+                if (widget.activeRoute != null && widget.activeRoute!.points.isNotEmpty)
+                  Polyline(
+                    polylineId: const PolylineId('safe_polyline'),
+                    points: widget.activeRoute!.points,
+                    color: widget.activeRoute!.floodsCrossed == 0 ? Colors.green : Colors.orangeAccent,
+                    width: 6,
+                  ),
+              },
             ),
-            const Positioned(
-              bottom: 24,
-              left: 16,
-              child: LegendWidget(),
+
+            //botão de loc personalizado
+            Positioned(
+              bottom: widget.activeRoute != null ? 230 : 90,
+              right: 16,
+              child: FloatingActionButton(
+                heroTag: "my_location_btn",
+                elevation: 4,
+                backgroundColor: Colors.white.withOpacity(0.9),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                onPressed: () {
+                  _moveCameraToUser();
+                },
+                child: const Icon(Icons.my_location_rounded, color: Colors.black87, size: 26),
+              ),
             ),
+
+            const Positioned(bottom: 22, left: 32, child: LegendWidget()),
           ],
         );
       },
