@@ -47,7 +47,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     if (erro == null) {
-      Navigator.pushReplacementNamed(context, '/home');
+      //manda o usuário para verificação
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/verify-email');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -150,7 +152,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       children: [
                         TextField(
                           controller: nameController,
-                          textCapitalization: TextCapitalization.words, // Ajuda a iniciar o nome com Maiúscula
+                          textCapitalization: TextCapitalization.words, //ajuda a iniciar o nome com maiúscula
                           decoration: buildInputDecoration("Nome Completo", "João Pedro"),
                         ),
                         const SizedBox(height: 16),
