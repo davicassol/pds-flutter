@@ -6,6 +6,7 @@ import 'package:tcc_alagouai/features/auth/screens/verify_email_screen.dart';
 import 'core/screens/main_layout_screen.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'package:tcc_alagouai/features/auth/screens/forgot_password_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
 import 'features/auth/screens/verify_email_screen.dart';
 import 'features/map/screens/home_screen.dart';
@@ -62,6 +63,7 @@ class MyApp extends StatelessWidget {
       routes: {
         "/": (context) => const SplashScreen(),
         "/login": (context) => const LoginScreen(),
+        "/forgot-password": (context) => const ForgotPasswordScreen(),
         "/signup": (context) => const SignUpScreen(),
         "/verify-email": (context) => const VerifyEmailScreen(),
         "/home": (context) => const MainLayoutScreen(),

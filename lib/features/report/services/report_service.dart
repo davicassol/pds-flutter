@@ -46,7 +46,7 @@ class ReportService {
         print("Erro ao verificar status de administrador: $e");
       }
 
-      //aplica as regras se não for adm (regra de 3 reportes por dia)
+      //aplica as regras se não for adm (regra de 5 reportes por dia)
       if (!isAdmin) {
         DateTime now = DateTime.now();
         DateTime startOfToday = DateTime(now.year, now.month, now.day);
@@ -57,11 +57,11 @@ class ReportService {
             .where('timestamp', isGreaterThanOrEqualTo: startOfToday)
             .get();
 
-        if (todayReports.docs.length >= 3) {
-          return "Você atingiu o limite máximo de 3 reportes para o dia de hoje.";
+        if (todayReports.docs.length >= 5) {
+          return "Você atingiu o limite máximo de 5 reportes para o dia de hoje.";
         }
 
-        //regra de distância máxima de 100 metros
+        //regra de distância máxima de 200 metros
         Position currentPosition = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
@@ -71,8 +71,8 @@ class ReportService {
           selectedLat, selectedLng,
         );
 
-        if (distanceInMeters > 100) {
-          return "Você está muito longe do local! Só é permitido reportar alagamentos num raio de 100 metros.";
+        if (distanceInMeters > 200) {
+          return "Você está muito longe do local! Só é permitido reportar alagamentos num raio de 200 metros.";
         }
       }
 

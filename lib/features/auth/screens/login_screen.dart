@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // LOGO + HEADER
+                  //LOGO + HEADER
                   Column(
                     children: [
                       Container(
@@ -106,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 32),
 
-                  // CARD
+                  //CARD
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -140,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: Alignment.centerLeft,
                           child: GestureDetector(
                             onTap: () {
-                              // TODO: implementar recuperação de senha
+                              Navigator.pushNamed(context, '/forgot-password');
                             },
                             child: const Text(
                               "Esqueceu sua senha?",

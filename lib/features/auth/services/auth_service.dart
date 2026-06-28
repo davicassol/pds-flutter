@@ -83,6 +83,20 @@ class AuthService {
     }
   }
 
+  Future<String?> resetPassword({required String email}) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'invalid-email') {
+        return "E-mail inválido ou não cadastrado.";
+      }
+      return "Erro ao enviar o link de recuperação: ${e.message}";
+    } catch (e) {
+      return "Ocorreu um erro inesperado.";
+    }
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
   }
