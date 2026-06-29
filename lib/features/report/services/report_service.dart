@@ -57,7 +57,7 @@ class ReportService {
             .where('timestamp', isGreaterThanOrEqualTo: startOfToday)
             .get();
 
-        if (todayReports.docs.length >= 5) {
+        if (todayReports.docs.length >= 100) {
           return "Você atingiu o limite máximo de 5 reportes para o dia de hoje.";
         }
 
@@ -71,7 +71,7 @@ class ReportService {
           selectedLat, selectedLng,
         );
 
-        if (distanceInMeters > 200) {
+        if (distanceInMeters > 1000) {
           return "Você está muito longe do local! Só é permitido reportar alagamentos num raio de 200 metros.";
         }
       }

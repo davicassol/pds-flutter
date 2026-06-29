@@ -100,7 +100,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                       // Subtítulo
                       const Text(
-                        "Stay Safe, Stay Informed",
+                        "Esteja Seguro, Esteja Informado",
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 16,

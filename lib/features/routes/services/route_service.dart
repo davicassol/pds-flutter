@@ -36,6 +36,7 @@ class RouteService {
     );
     return distance <= toleranceMeters;
   }
+
   List<LatLng> _generateEscapePoints(LatLng center, double distanceInMeters) {
     double latOffset = distanceInMeters / 111320.0;
     double lngOffset = distanceInMeters / (40075000.0 * math.cos(center.latitude * math.pi / 180) / 360.0);
@@ -50,6 +51,33 @@ class RouteService {
       LatLng(center.latitude - latOffset, center.longitude + lngOffset), // Sudeste
       LatLng(center.latitude - latOffset, center.longitude - lngOffset), // Sudoeste
     ];
+  }
+
+  //preenche retas longas com pontos intermediários
+  List<LatLng> _densifyRoute(List<LatLng> route, double maxDistanceMeters) {
+    List<LatLng> denseRoute = [];
+    if (route.isEmpty) return denseRoute;
+
+    for (int i = 0; i < route.length - 1; i++) {
+      LatLng p1 = route[i];
+      LatLng p2 = route[i + 1];
+      denseRoute.add(p1);
+
+      double dist = Geolocator.distanceBetween(
+          p1.latitude, p1.longitude, p2.latitude, p2.longitude);
+
+      if (dist > maxDistanceMeters) {
+        int numPoints = (dist / maxDistanceMeters).ceil();
+        for (int j = 1; j < numPoints; j++) {
+          double fraction = j / numPoints;
+          double lat = p1.latitude + (p2.latitude - p1.latitude) * fraction;
+          double lng = p1.longitude + (p2.longitude - p1.longitude) * fraction;
+          denseRoute.add(LatLng(lat, lng));
+        }
+      }
+    }
+    denseRoute.add(route.last); //adiciona o último ponto da rota original
+    return denseRoute;
   }
 
   Future<SafeRouteResult?> getRoute(
@@ -69,7 +97,7 @@ class RouteService {
 
     LatLng problemArea = originalRoute.criticalFlood ?? LatLng(activeFloods.first['lat'], activeFloods.first['lng']);
 
-    List<LatLng> escapePoints = _generateEscapePoints(problemArea, 300);
+    List<LatLng> escapePoints = _generateEscapePoints(problemArea, 100);
 
     SafeRouteResult? bestDetour;
     double bestDetourScore = double.infinity;
@@ -132,21 +160,25 @@ class RouteService {
         List<PointLatLng> decodedPoints = PolylinePoints.decodePolyline(encodedPolyline);
         List<LatLng> currentRouteCoords = decodedPoints.map((p) => LatLng(p.latitude, p.longitude)).toList();
 
+        //cria pontos a cada 15 metros para identificar alagamentos na rota
+        List<LatLng> denseRouteCoords = _densifyRoute(currentRouteCoords, 15.0);
+
         double penaltyScore = 0;
         Set<int> floodsHit = {};
         LatLng? localWorstFlood;
         double highestPenalty = 0;
 
-        for (var coord in currentRouteCoords) {
+        //for percorre toda rota
+        for (var coord in denseRouteCoords) {
           for (int i = 0; i < activeFloods.length; i++) {
             if (floodsHit.contains(i)) continue;
 
             var flood = activeFloods[i];
             String safeLevel = (flood['floodLevel'] ?? 'high').toLowerCase();
 
-            //Margens de colisão
+            //margens de colisão
             double tolerance = safeLevel == 'low' ? 15.0 : (safeLevel == 'medium' ? 20.0 : 30.0);
-
+            //sistema de score da rota
             if (_isPointInFlood(coord, flood['lat'], flood['lng'], tolerance)) {
               floodsHit.add(i);
               double currentPenalty = 0;
