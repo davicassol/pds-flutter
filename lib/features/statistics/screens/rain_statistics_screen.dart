@@ -14,19 +14,39 @@ class RainStatisticsScreen extends StatefulWidget {
   State<RainStatisticsScreen> createState() => _RainStatisticsScreenState();
 }
 
-class _RainStatisticsScreenState extends State<RainStatisticsScreen> {
+class _RainStatisticsScreenState extends State<RainStatisticsScreen> with WidgetsBindingObserver {
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
   }
 
-  Future<void> _loadData() async {
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  //escuta quando o app volta do sistema operacional
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadData(isBackgroundResume: true);
+    }
+  }
+
+  Future<void> _loadData({bool isBackgroundResume = false}) async {
     final provider = context.read<WeatherProvider>();
-    provider.isLoading = true;
-    provider.notifyListeners();
+
+    //só mostra a tela de carregando se for a primeira vez
+    if (!isBackgroundResume) {
+      provider.isLoading = true;
+      provider.notifyListeners();
+    }
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -34,6 +54,8 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> {
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
+        if (isBackgroundResume) throw Exception("Permissão negada (Silencioso)");
+
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) throw Exception("Permissão negada");
       }
@@ -65,7 +87,7 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> {
           child: provider.isLoading
               ? const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue))
               : provider.errorMessage != null
-              ? Center(child: Text(provider.errorMessage!))
+              ? _buildEmptyState(provider.errorMessage!, Icons.location_off_rounded)
               : RefreshIndicator(
             onRefresh: _loadData,
             color: AppColors.primaryBlue,
@@ -234,6 +256,38 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> {
         }
       },
       child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  //mostra a tela de erro
+  Widget _buildEmptyState(String message, IconData icon) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 64, color: AppColors.primaryBlue.withOpacity(0.5)),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: AppColors.textGreyBlue,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

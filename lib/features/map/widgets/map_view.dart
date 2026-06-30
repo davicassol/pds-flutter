@@ -19,10 +19,11 @@ class MapView extends StatefulWidget {
   State<MapView> createState() => _MapViewState();
 }
 
-class _MapViewState extends State<MapView> {
+class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   GoogleMapController? mapController;
 
   bool _isInitializing = true;
+  bool _hasPermission = true;
   LatLng _userInitialPosition = const LatLng(-29.3385, -49.7291);
 
   BitmapDescriptor? setaNavegacao;
@@ -33,11 +34,26 @@ class _MapViewState extends State<MapView> {
   @override
   void initState() {
     super.initState();
-    _createNavigationIcon(); //desenha a seta ao iniciar a tela
+    WidgetsBinding.instance.addObserver(this);
+    _createNavigationIcon();
     _startLocationUpdates();
   }
 
-  //função que converte o ícone nativo do flutter em uma imagem para o Google Maps
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _positionStreamSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      //quando volta das configs do celular, reavalia a permissão sem abrir pop-up nativo
+      _startLocationUpdates(isBackgroundResume: true);
+    }
+  }
+
   Future<void> _createNavigationIcon() async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
@@ -58,12 +74,10 @@ class _MapViewState extends State<MapView> {
     final ui.Image img = await pictureRecorder.endRecording().toImage(size.toInt(), size.toInt());
     final ByteData? data = await img.toByteData(format: ui.ImageByteFormat.png);
 
-    if (data != null) {
-      if (mounted) {
-        setState(() {
-          setaNavegacao = BitmapDescriptor.fromBytes(data.buffer.asUint8List());
-        });
-      }
+    if (data != null && mounted) {
+      setState(() {
+        setaNavegacao = BitmapDescriptor.fromBytes(data.buffer.asUint8List());
+      });
     }
   }
 
@@ -76,11 +90,10 @@ class _MapViewState extends State<MapView> {
       _moveCameraToUser();
     }
 
-    //usuário apertou "Iniciar" ou "Sair"
     if (widget.isNavigating && !oldWidget.isNavigating) {
-      _moveCameraToUser(force3D: true); //pula para a visão 3D
+      _moveCameraToUser(force3D: true);
     } else if (!widget.isNavigating && oldWidget.isNavigating) {
-      _fitRouteOnMap(); //volta a ver a rota toda de cima
+      _fitRouteOnMap();
     }
   }
 
@@ -104,88 +117,106 @@ class _MapViewState extends State<MapView> {
       northeast: LatLng(maxLat, maxLng),
     );
 
-    //modo normal o tilt é 0 (visto de cima) e bearing é 0 (norte pra cima)
     mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
 
   Future<void> _moveCameraToUser({bool force3D = false}) async {
     try {
-      Position position = await Geolocator.getCurrentPosition();
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high
+      ).timeout(const Duration(seconds: 5));
 
-      if (force3D || widget.isNavigating) {
-        mapController?.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(position.latitude, position.longitude),
-              zoom: 18.5,
-              tilt: 60.0, // Efeito 3D
-              bearing: position.heading > 0 ? position.heading : 0.0,
+      if (mapController != null) {
+        if (force3D || widget.isNavigating) {
+          mapController!.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: LatLng(position.latitude, position.longitude),
+                zoom: 18.5,
+                tilt: 60.0,
+                bearing: position.heading > 0 ? position.heading : 0.0,
+              ),
             ),
-          ),
-        );
-      } else {
-        mapController?.animateCamera(
-          CameraUpdate.newLatLngZoom(LatLng(position.latitude, position.longitude), 16.0),
-        );
+          );
+        } else {
+          mapController!.animateCamera(
+            CameraUpdate.newLatLngZoom(LatLng(position.latitude, position.longitude), 16.0),
+          );
+        }
       }
     } catch (e) {
-      debugPrint("Erro ao mover para usuário: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Buscando sinal de GPS... Tente novamente."), backgroundColor: Colors.orange),
+        );
+      }
     }
   }
 
-  @override
-  void dispose() {
-    _positionStreamSubscription?.cancel();
-    super.dispose();
-  }
+  Future<void> _startLocationUpdates({bool isBackgroundResume = false}) async {
+    if (!mounted) return;
 
-  Future<void> _startLocationUpdates() async {
+    if (!isBackgroundResume) {
+      setState(() { _isInitializing = true; });
+    }
+
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      if (mounted) setState(() => _isInitializing = false);
+      if (mounted) setState(() { _isInitializing = false; _hasPermission = false; });
       return;
     }
 
     LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
+
+    if (permission == LocationPermission.denied && !isBackgroundResume) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        if (mounted) setState(() => _isInitializing = false);
-        return;
-      }
     }
-    if (permission == LocationPermission.deniedForever) {
-      if (mounted) setState(() => _isInitializing = false);
+
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (mounted) setState(() { _isInitializing = false; _hasPermission = false; });
       return;
     }
 
+    if (mounted) setState(() { _hasPermission = true; });
+
     try {
       Position? cachedPosition = await Geolocator.getLastKnownPosition();
-      Position finalPosition = cachedPosition ?? await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+      if (cachedPosition != null && mounted) {
+        setState(() {
+          _userInitialPosition = LatLng(cachedPosition.latitude, cachedPosition.longitude);
+          _currentPosition = cachedPosition;
+          _isInitializing = false;
+        });
+      }
+
+      Position finalPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+      ).timeout(const Duration(seconds: 4));
 
       if (mounted) {
         setState(() {
           _userInitialPosition = LatLng(finalPosition.latitude, finalPosition.longitude);
+          _currentPosition = finalPosition;
           _isInitializing = false;
         });
+
+        //se não tem rota ativa, vai pra localização do usuário
+        if (widget.activeRoute == null && !widget.isNavigating) {
+          _moveCameraToPosition(finalPosition);
+        }
       }
     } catch (e) {
-      if (mounted) setState(() => _isInitializing = false);
+      if (mounted) setState(() { _isInitializing = false; });
     }
 
+    _positionStreamSubscription?.cancel();
     _positionStreamSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 5, //atualiza a cada 5 metros para a câmera 3D ficar fluida
+        distanceFilter: 5,
       ),
     ).listen((Position position) {
-
-      // Guarda a posição para desenhar a seta
-      if (mounted) {
-        setState(() {
-          _currentPosition = position;
-        });
-      }
+      if (mounted) setState(() { _currentPosition = position; });
 
       if (widget.isNavigating) {
         _moveCameraToPosition(position);
@@ -204,7 +235,7 @@ class _MapViewState extends State<MapView> {
               target: LatLng(position.latitude, position.longitude),
               zoom: 18.5,
               tilt: 60.0,
-              bearing: position.heading, //mapa gira com o usuário
+              bearing: position.heading,
             ),
           ),
         );
@@ -348,6 +379,58 @@ class _MapViewState extends State<MapView> {
       return const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue));
     }
 
+    if (!_hasPermission) {
+      return Container(
+        color: const Color(0xFFEFF6FF),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.location_off_rounded, size: 80, color: AppColors.primaryBlue.withValues(alpha: 0.5)),
+                const SizedBox(height: 24),
+                const Text(
+                  "Localização Negada",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.darkNavy),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "O aplicativo precisa da sua localização para exibir o mapa e calcular as rotas seguras.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 15, color: AppColors.textGreyBlue),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _startLocationUpdates();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                    label: const Text("Tentar Novamente", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    Geolocator.openAppSettings();
+                  },
+                  child: const Text("Abrir Configurações", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                )
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return StreamBuilder<QuerySnapshot>(
       stream: ReportService().getActiveReports(),
       builder: (context, snapshot) {
@@ -361,12 +444,12 @@ class _MapViewState extends State<MapView> {
               final pos = LatLng(data['lat'], data['lng']);
               final level = data['floodLevel'] ?? 'high';
 
-              double markerHue = BitmapDescriptor.hueRed; //Alto Risco (Vermelho)
+              double markerHue = BitmapDescriptor.hueRed;
 
               if (level.toLowerCase() == 'low') {
-                markerHue = BitmapDescriptor.hueCyan; //Baixo Risco (Azul Claro)
+                markerHue = BitmapDescriptor.hueCyan;
               } else if (level.toLowerCase() == 'medium') {
-                markerHue = BitmapDescriptor.hueOrange; //Médio Risco (Laranja)
+                markerHue = BitmapDescriptor.hueOrange;
               }
 
               markers.add(Marker(
@@ -401,14 +484,13 @@ class _MapViewState extends State<MapView> {
           ));
         }
 
-        //desenha a seta (usuário)
         if (_currentPosition != null && setaNavegacao != null) {
           markers.add(Marker(
             markerId: const MarkerId('current_user_location'),
             position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
             rotation: _currentPosition!.heading,
             icon: setaNavegacao!,
-            anchor: const Offset(0.5, 0.5), //centraliza
+            anchor: const Offset(0.5, 0.5),
             zIndex: 999,
           ));
         }
@@ -421,6 +503,7 @@ class _MapViewState extends State<MapView> {
               myLocationEnabled: false,
               myLocationButtonEnabled: false,
               zoomControlsEnabled: false,
+              mapToolbarEnabled: false,
               compassEnabled: true,
               buildingsEnabled: false,
               markers: markers,
@@ -436,7 +519,6 @@ class _MapViewState extends State<MapView> {
               },
             ),
 
-            //botão de localização esconde se estiver navegando
             if (!widget.isNavigating)
               Positioned(
                 bottom: widget.activeRoute != null ? 240 : 90,
@@ -455,7 +537,6 @@ class _MapViewState extends State<MapView> {
                 ),
               ),
 
-            //esconde a legenda para limpar mapa
             if (!widget.isNavigating)
               const Positioned(bottom: 22, left: 32, child: LegendWidget()),
           ],

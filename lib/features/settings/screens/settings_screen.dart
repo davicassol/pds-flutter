@@ -13,8 +13,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool notifications = true;
-  bool autoLocation = true;
   bool rainForecast = false;
+  // bool autoLocation = true; //variável desativada temporariamente
 
   @override
   void initState() {
@@ -26,8 +26,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       notifications = prefs.getBool('notifications') ?? true;
-      autoLocation = prefs.getBool('autoLocation') ?? true;
       rainForecast = prefs.getBool('rainForecast') ?? false;
+      // autoLocation = prefs.getBool('autoLocation') ?? true;
     });
   }
 
@@ -77,6 +77,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
 
+              /* // TODO: funcionalidade desativada no momento
+              //motivo: evitar conflito de estados com a permissão nativa do SO.
+              //o controle de localização deve ser gerido apenas pelas configurações do aparelho.
               SettingsSection(
                 icon: Icons.location_on_rounded,
                 title: "Localização",
@@ -86,13 +89,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: "Localização Automática",
                     subtitle: "Usar o GPS para focar o mapa em você",
                     value: autoLocation,
-                    onChanged: (value) {
-                      setState(() => autoLocation = value);
-                      _saveSetting('autoLocation', value);
+                    onChanged: (value) async {
                     },
                   ),
                 ],
               ),
+              */
 
               SettingsSection(
                 icon: Icons.cloud_rounded,
@@ -113,7 +115,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               const SizedBox(height: 16),
 
-              // Card informativo
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
