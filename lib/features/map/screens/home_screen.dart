@@ -34,6 +34,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: MapView(
               activeRoute: _currentRoute,
               isNavigating: _isNavigating, //passa o estado pro mapa
+              onRouteFinished: () { //gatinho para finalizar rota
+                _clearRoute();
+              },
             ),
           ),
 

@@ -13,7 +13,9 @@ import 'legend_widget.dart';
 class MapView extends StatefulWidget {
   final SafeRouteResult? activeRoute;
   final bool isNavigating;
-  const MapView({super.key, this.activeRoute, this.isNavigating = false});
+  final VoidCallback? onRouteFinished;
+
+  const MapView({super.key, this.activeRoute, this.isNavigating = false, this.onRouteFinished});
 
   @override
   State<MapView> createState() => _MapViewState();
@@ -26,8 +28,11 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   bool _hasPermission = true;
   LatLng _userInitialPosition = const LatLng(-29.3385, -49.7291);
 
-  BitmapDescriptor? setaNavegacao;
+  //BitmapDescriptor? setaNavegacao;
   Position? _currentPosition;
+
+  double _lastValidHeading = 0.0;
+  bool _isFinishingRoute = false;
 
   StreamSubscription<Position>? _positionStreamSubscription;
 
@@ -35,7 +40,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _createNavigationIcon();
+    //_createNavigationIcon();
     _startLocationUpdates();
   }
 
@@ -49,37 +54,32 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      //quando volta das configs do celular, reavalia a permissão sem abrir pop-up nativo
       _startLocationUpdates(isBackgroundResume: true);
     }
   }
 
-  Future<void> _createNavigationIcon() async {
-    final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
-    final Canvas canvas = Canvas(pictureRecorder);
-    const double size = 80.0;
-
-    TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
-    textPainter.text = TextSpan(
-      text: String.fromCharCode(Icons.navigation.codePoint),
-      style: TextStyle(
-        fontSize: size,
-        fontFamily: Icons.navigation.fontFamily,
-        color: const Color(0xFF2B66F6),
-      ),
-    );
-    textPainter.layout();
-    textPainter.paint(canvas, const Offset(0.0, 0.0));
-
-    final ui.Image img = await pictureRecorder.endRecording().toImage(size.toInt(), size.toInt());
-    final ByteData? data = await img.toByteData(format: ui.ImageByteFormat.png);
-
-    if (data != null && mounted) {
-      setState(() {
-        setaNavegacao = BitmapDescriptor.fromBytes(data.buffer.asUint8List());
-      });
-    }
-  }
+  // Future<void> _createNavigationIcon() async {
+  //   final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
+  //   final Canvas canvas = Canvas(pictureRecorder);
+  //   const double size = 80.0;
+  //
+  //   TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+  //   textPainter.text = TextSpan(
+  //     text: String.fromCharCode(Icons.navigation.codePoint),
+  //     style: TextStyle(fontSize: size, fontFamily: Icons.navigation.fontFamily, color: const Color(0xFF2B66F6)),
+  //   );
+  //   textPainter.layout();
+  //   textPainter.paint(canvas, const Offset(0.0, 0.0));
+  //
+  //   final ui.Image img = await pictureRecorder.endRecording().toImage(size.toInt(), size.toInt());
+  //   final ByteData? data = await img.toByteData(format: ui.ImageByteFormat.png);
+  //
+  //   if (data != null && mounted) {
+  //     setState(() {
+  //       setaNavegacao = BitmapDescriptor.fromBytes(data.buffer.asUint8List());
+  //     });
+  //   }
+  // }
 
   @override
   void didUpdateWidget(covariant MapView oldWidget) {
@@ -93,64 +93,96 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     if (widget.isNavigating && !oldWidget.isNavigating) {
       _moveCameraToUser(force3D: true);
     } else if (!widget.isNavigating && oldWidget.isNavigating) {
+      //quando sai da navegação, força a voltar pra visão de cima
+      _moveCameraToUser();
       _fitRouteOnMap();
     }
   }
 
   void _fitRouteOnMap() {
     if (widget.activeRoute == null || widget.activeRoute!.points.isEmpty || mapController == null) return;
-
     double minLat = widget.activeRoute!.points.first.latitude;
     double minLng = widget.activeRoute!.points.first.longitude;
     double maxLat = widget.activeRoute!.points.first.latitude;
     double maxLng = widget.activeRoute!.points.first.longitude;
-
     for (var point in widget.activeRoute!.points) {
       if (point.latitude < minLat) minLat = point.latitude;
       if (point.latitude > maxLat) maxLat = point.latitude;
       if (point.longitude < minLng) minLng = point.longitude;
       if (point.longitude > maxLng) maxLng = point.longitude;
     }
-
-    LatLngBounds bounds = LatLngBounds(
-      southwest: LatLng(minLat, minLng),
-      northeast: LatLng(maxLat, maxLng),
-    );
-
+    LatLngBounds bounds = LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
     mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
 
   Future<void> _moveCameraToUser({bool force3D = false}) async {
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high
-      ).timeout(const Duration(seconds: 5));
+    if (mapController == null || _currentPosition == null) return;
 
-      if (mapController != null) {
-        if (force3D || widget.isNavigating) {
-          mapController!.animateCamera(
-            CameraUpdate.newCameraPosition(
-              CameraPosition(
-                target: LatLng(position.latitude, position.longitude),
-                zoom: 18.5,
-                tilt: 60.0,
-                bearing: position.heading > 0 ? position.heading : 0.0,
-              ),
+    //força o tilt e o bearing zerarem
+    if (force3D || widget.isNavigating) {
+      mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+            zoom: 18.5,
+            tilt: 60.0,
+            bearing: _lastValidHeading,
+          ),
+        ),
+      );
+    } else {
+      mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+            zoom: 16.0,
+            tilt: 0.0, //retorna a visão plana
+            bearing: 0.0, //retorna o norte para cima
+          ),
+        ),
+      );
+    }
+  }
+
+  void _finalizarRota() {
+    if (_isFinishingRoute) return;
+    _isFinishingRoute = true;
+
+    showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Column(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.green, size: 60),
+                SizedBox(height: 16),
+                Text("Você chegou!", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkNavy)),
+              ],
             ),
-          );
-        } else {
-          mapController!.animateCamera(
-            CameraUpdate.newLatLngZoom(LatLng(position.latitude, position.longitude), 16.0),
+            content: const Text("Você chegou ao seu destino final.", textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryBlue,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _isFinishingRoute = false;
+                  if (widget.onRouteFinished != null) {
+                    widget.onRouteFinished!();
+                  }
+                },
+                child: const Text("Concluir", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              )
+            ],
           );
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Buscando sinal de GPS... Tente novamente."), backgroundColor: Colors.orange),
-        );
-      }
-    }
+    );
   }
 
   Future<void> _startLocationUpdates({bool isBackgroundResume = false}) async {
@@ -167,11 +199,9 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     }
 
     LocationPermission permission = await Geolocator.checkPermission();
-
     if (permission == LocationPermission.denied && !isBackgroundResume) {
       permission = await Geolocator.requestPermission();
     }
-
     if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
       if (mounted) setState(() { _isInitializing = false; _hasPermission = false; });
       return;
@@ -184,39 +214,50 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
       if (cachedPosition != null && mounted) {
         setState(() {
           _userInitialPosition = LatLng(cachedPosition.latitude, cachedPosition.longitude);
-          _currentPosition = cachedPosition;
-          _isInitializing = false;
+          if (_currentPosition == null) _currentPosition = cachedPosition;
         });
-      }
-
-      Position finalPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-      ).timeout(const Duration(seconds: 4));
-
-      if (mounted) {
-        setState(() {
-          _userInitialPosition = LatLng(finalPosition.latitude, finalPosition.longitude);
-          _currentPosition = finalPosition;
-          _isInitializing = false;
-        });
-
-        //se não tem rota ativa, vai pra localização do usuário
-        if (widget.activeRoute == null && !widget.isNavigating) {
-          _moveCameraToPosition(finalPosition);
-        }
       }
     } catch (e) {
-      if (mounted) setState(() { _isInitializing = false; });
+      //ignora e deixa o stream cuidar
+    }
+
+    if (mounted) {
+      setState(() { _isInitializing = false; });
     }
 
     _positionStreamSubscription?.cancel();
+
+    LocationSettings locationSettings = const LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 2,
+    );
+
     _positionStreamSubscription = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-      ),
+      locationSettings: locationSettings,
     ).listen((Position position) {
-      if (mounted) setState(() { _currentPosition = position; });
+      if (!mounted) return;
+
+      setState(() {
+        _currentPosition = position;
+        if (position.speed > 0.5) {
+          double diff = (position.heading - _lastValidHeading).abs();
+          if (diff > 180.0) diff = 360.0 - diff;
+          if (diff > 2.0) _lastValidHeading = position.heading;
+        }
+      });
+
+      if (widget.isNavigating && widget.activeRoute != null) {
+        LatLng destino = widget.activeRoute!.points.last;
+        double distancia = Geolocator.distanceBetween(
+          position.latitude, position.longitude,
+          destino.latitude, destino.longitude,
+        );
+
+        if (distancia <= 60.0) {
+          _finalizarRota();
+          return;
+        }
+      }
 
       if (widget.isNavigating) {
         _moveCameraToPosition(position);
@@ -235,15 +276,19 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
               target: LatLng(position.latitude, position.longitude),
               zoom: 18.5,
               tilt: 60.0,
-              bearing: position.heading,
+              bearing: _lastValidHeading,
             ),
           ),
         );
       } else {
         mapController!.animateCamera(
-          CameraUpdate.newLatLngZoom(
-            LatLng(position.latitude, position.longitude),
-            16.0,
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(position.latitude, position.longitude),
+              zoom: 16.0,
+              tilt: 0.0,
+              bearing: 0.0,
+            ),
           ),
         );
       }
@@ -283,9 +328,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
       builder: (context) {
         return Padding(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
@@ -294,22 +337,12 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryBlue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
+                child: Container(width: 40, height: 5, decoration: BoxDecoration(color: AppColors.primaryBlue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10))),
               ),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: severityColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                decoration: BoxDecoration(color: severityColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -390,38 +423,23 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
               children: [
                 Icon(Icons.location_off_rounded, size: 80, color: AppColors.primaryBlue.withValues(alpha: 0.5)),
                 const SizedBox(height: 24),
-                const Text(
-                  "Localização Negada",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.darkNavy),
-                  textAlign: TextAlign.center,
-                ),
+                const Text("Localização Negada", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.darkNavy), textAlign: TextAlign.center),
                 const SizedBox(height: 12),
-                const Text(
-                  "O aplicativo precisa da sua localização para exibir o mapa e calcular as rotas seguras.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, color: AppColors.textGreyBlue),
-                ),
+                const Text("O aplicativo precisa da sua localização para exibir o mapa e calcular as rotas seguras.", textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: AppColors.textGreyBlue)),
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      _startLocationUpdates();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlue,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
+                    onPressed: () { _startLocationUpdates(); },
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                     icon: const Icon(Icons.refresh_rounded, color: Colors.white),
                     label: const Text("Tentar Novamente", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {
-                    Geolocator.openAppSettings();
-                  },
+                  onPressed: () { Geolocator.openAppSettings(); },
                   child: const Text("Abrir Configurações", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
                 )
               ],
@@ -445,12 +463,8 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
               final level = data['floodLevel'] ?? 'high';
 
               double markerHue = BitmapDescriptor.hueRed;
-
-              if (level.toLowerCase() == 'low') {
-                markerHue = BitmapDescriptor.hueCyan;
-              } else if (level.toLowerCase() == 'medium') {
-                markerHue = BitmapDescriptor.hueOrange;
-              }
+              if (level.toLowerCase() == 'low') markerHue = BitmapDescriptor.hueCyan;
+              else if (level.toLowerCase() == 'medium') markerHue = BitmapDescriptor.hueOrange;
 
               markers.add(Marker(
                 markerId: MarkerId(doc.id),
@@ -484,23 +498,23 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
           ));
         }
 
-        if (_currentPosition != null && setaNavegacao != null) {
-          markers.add(Marker(
-            markerId: const MarkerId('current_user_location'),
-            position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-            rotation: _currentPosition!.heading,
-            icon: setaNavegacao!,
-            anchor: const Offset(0.5, 0.5),
-            zIndex: 999,
-          ));
-        }
+        // if (_currentPosition != null && setaNavegacao != null) {
+        //   markers.add(Marker(
+        //     markerId: const MarkerId('current_user_location'),
+        //     position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        //     rotation: _lastValidHeading,
+        //     icon: setaNavegacao!,
+        //     anchor: const Offset(0.5, 0.5),
+        //     zIndex: 999,
+        //   ));
+        // }
 
         return Stack(
           children: [
             GoogleMap(
               onMapCreated: _onMapCreated,
               initialCameraPosition: CameraPosition(target: _userInitialPosition, zoom: 16.0),
-              myLocationEnabled: false,
+              myLocationEnabled: true,
               myLocationButtonEnabled: false,
               zoomControlsEnabled: false,
               mapToolbarEnabled: false,
@@ -518,7 +532,6 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
                   ),
               },
             ),
-
             if (!widget.isNavigating)
               Positioned(
                 bottom: widget.activeRoute != null ? 240 : 90,
@@ -527,16 +540,11 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
                   heroTag: "my_location_btn",
                   elevation: 4,
                   backgroundColor: Colors.white.withValues(alpha: 0.9),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  onPressed: () {
-                    _moveCameraToUser();
-                  },
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  onPressed: () { _moveCameraToUser(); },
                   child: const Icon(Icons.my_location_rounded, color: Colors.black87, size: 26),
                 ),
               ),
-
             if (!widget.isNavigating)
               const Positioned(bottom: 22, left: 32, child: LegendWidget()),
           ],
