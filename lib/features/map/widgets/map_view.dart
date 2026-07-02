@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tcc_alagouai/features/report/services/report_service.dart';
 import 'package:tcc_alagouai/core/constants/app_colors.dart';
 import 'package:tcc_alagouai/features/routes/services/route_service.dart';
+import 'package:tcc_alagouai/features/routes/services/route_simulator.dart'; // Import do seu novo serviço
 import 'legend_widget.dart';
 
 class MapView extends StatefulWidget {
@@ -28,8 +29,11 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   bool _hasPermission = true;
   LatLng _userInitialPosition = const LatLng(-29.3385, -49.7291);
 
-  //BitmapDescriptor? setaNavegacao;
   Position? _currentPosition;
+
+  //INSTÂNCIA DO SIMULADOR (False como padrão geração de apks e uso real)
+  final RouteSimulator _simulator = RouteSimulator();
+  final bool _isSimulating = false; // TRUE = carro anda sozinho | FALSE = usa o GPS real da rua
 
   double _lastValidHeading = 0.0;
   bool _isFinishingRoute = false;
@@ -40,7 +44,6 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    //_createNavigationIcon();
     _startLocationUpdates();
   }
 
@@ -48,6 +51,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _positionStreamSubscription?.cancel();
+    _simulator.stop(); //garante que o cronômetro desligue ao fechar a tela
     super.dispose();
   }
 
@@ -58,29 +62,6 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     }
   }
 
-  // Future<void> _createNavigationIcon() async {
-  //   final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
-  //   final Canvas canvas = Canvas(pictureRecorder);
-  //   const double size = 80.0;
-  //
-  //   TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
-  //   textPainter.text = TextSpan(
-  //     text: String.fromCharCode(Icons.navigation.codePoint),
-  //     style: TextStyle(fontSize: size, fontFamily: Icons.navigation.fontFamily, color: const Color(0xFF2B66F6)),
-  //   );
-  //   textPainter.layout();
-  //   textPainter.paint(canvas, const Offset(0.0, 0.0));
-  //
-  //   final ui.Image img = await pictureRecorder.endRecording().toImage(size.toInt(), size.toInt());
-  //   final ByteData? data = await img.toByteData(format: ui.ImageByteFormat.png);
-  //
-  //   if (data != null && mounted) {
-  //     setState(() {
-  //       setaNavegacao = BitmapDescriptor.fromBytes(data.buffer.asUint8List());
-  //     });
-  //   }
-  // }
-
   @override
   void didUpdateWidget(covariant MapView oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -90,10 +71,34 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
       _moveCameraToUser();
     }
 
+    // Controle de Início/Fim da Navegação
     if (widget.isNavigating && !oldWidget.isNavigating) {
-      _moveCameraToUser(force3D: true);
+      if (_isSimulating && widget.activeRoute != null) {
+        // Pausa o GPS real e inicia o carro fantasma
+        _positionStreamSubscription?.pause();
+        _simulator.start(
+          points: widget.activeRoute!.points,
+          onPositionChanged: (mockPosition) {
+            if (!mounted) return;
+            setState(() {
+              _currentPosition = mockPosition;
+              _lastValidHeading = mockPosition.heading;
+            });
+            _moveCameraToPosition(mockPosition);
+          },
+          onFinished: () {
+            _finalizarRota();
+          },
+        );
+      } else {
+        _moveCameraToUser(force3D: true);
+      }
     } else if (!widget.isNavigating && oldWidget.isNavigating) {
-      //quando sai da navegação, força a voltar pra visão de cima
+      //quando sai da navegação, força a voltar pra visão de cima e desliga o simulador
+      if (_isSimulating) {
+        _simulator.stop();
+        _positionStreamSubscription?.resume(); //liga o GPS real de volta
+      }
       _moveCameraToUser();
       _fitRouteOnMap();
     }
@@ -118,7 +123,6 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   Future<void> _moveCameraToUser({bool force3D = false}) async {
     if (mapController == null || _currentPosition == null) return;
 
-    //força o tilt e o bearing zerarem
     if (force3D || widget.isNavigating) {
       mapController!.animateCamera(
         CameraUpdate.newCameraPosition(
@@ -136,8 +140,8 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
           CameraPosition(
             target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
             zoom: 16.0,
-            tilt: 0.0, //retorna a visão plana
-            bearing: 0.0, //retorna o norte para cima
+            tilt: 0.0,
+            bearing: 0.0,
           ),
         ),
       );
@@ -218,7 +222,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
         });
       }
     } catch (e) {
-      //ignora e deixa o stream cuidar
+      // ignora e deixa o stream cuidar
     }
 
     if (mounted) {
@@ -236,6 +240,9 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
       locationSettings: locationSettings,
     ).listen((Position position) {
       if (!mounted) return;
+
+      //se o simulador estiver rodando, ignora as posições reais da rua
+      if (_simulator.isRunning) return;
 
       setState(() {
         _currentPosition = position;
@@ -270,7 +277,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   void _moveCameraToPosition(Position position) {
     if (mapController != null) {
       if (widget.isNavigating) {
-        mapController!.animateCamera(
+        mapController!.moveCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
               target: LatLng(position.latitude, position.longitude),
@@ -498,16 +505,34 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
           ));
         }
 
-        // if (_currentPosition != null && setaNavegacao != null) {
-        //   markers.add(Marker(
-        //     markerId: const MarkerId('current_user_location'),
-        //     position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-        //     rotation: _lastValidHeading,
-        //     icon: setaNavegacao!,
-        //     anchor: const Offset(0.5, 0.5),
-        //     zIndex: 999,
-        //   ));
-        // }
+        // ... (código dos marcadores de alagamento)
+
+        // Marcadores de início e fim da rota (já estão no seu código)
+        if (widget.activeRoute != null && widget.activeRoute!.points.isNotEmpty) {
+          markers.add(Marker(
+            markerId: const MarkerId('start_point'),
+            position: widget.activeRoute!.points.first,
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          ));
+          markers.add(Marker(
+            markerId: const MarkerId('end_point'),
+            position: widget.activeRoute!.points.last,
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+          ));
+        }
+
+        // NOVO: Adiciona um pino azul para representar o carro SÓ durante a simulação
+        if (_isSimulating && _simulator.isRunning && _currentPosition != null) {
+          markers.add(Marker(
+            markerId: const MarkerId('simulated_car'),
+            position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+            rotation: _lastValidHeading,
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure), // Um pino azul claro
+            anchor: const Offset(0.5, 0.5),
+            zIndex: 999,
+          ));
+        }
+
 
         return Stack(
           children: [

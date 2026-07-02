@@ -37,7 +37,7 @@ class AboutScreen extends StatelessWidget {
                   const AboutSection(
                     title: "Sobre o Aplicativo",
                     content:
-                    "O AlagouAí foi desenvolvido para ajudar moradores e motoristas a navegarem com segurança durante eventos de inundação, combinando monitoramento colaborativo em tempo real com rotas inteligentes.",
+                    "O FloodWatch foi desenvolvido para ajudar moradores e motoristas a navegarem com segurança durante eventos de inundação, combinando monitoramento colaborativo em tempo real com rotas inteligentes.",
                   ),
 
                   const AboutSection(

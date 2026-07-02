@@ -44,39 +44,46 @@ class _RouteHeaderState extends State<RouteHeader> {
   Future<void> _getUserLocationForBias() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _setFallbackBias();
-        return;
-      }
+      if (!serviceEnabled) return;
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          _setFallbackBias();
+        if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
           return;
+        }
+      } else if (permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      //tenta pegar do cache
+      Position? cachedPosition = await Geolocator.getLastKnownPosition();
+
+      if (cachedPosition != null && mounted) {
+        setState(() {
+          _currentPositionForBias = LatLng(cachedPosition.latitude, cachedPosition.longitude);
+        });
+      } else {
+        //se o cache estiver vazio
+        //injeta temporariamente localização mockada de torres
+        if (mounted) {
+          setState(() {
+            _currentPositionForBias = const LatLng(-29.3385, -49.7291);
+          });
         }
       }
 
-      Position? cachedPosition = await Geolocator.getLastKnownPosition();
-      Position finalPosition = cachedPosition ?? await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+      // busca a posição real em segundo plano para confirmar/corrigir a temporária
+      Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low).then((finalPosition) {
+        if (mounted) {
+          setState(() {
+            _currentPositionForBias = LatLng(finalPosition.latitude, finalPosition.longitude);
+          });
+        }
+      });
 
-      if (mounted) {
-        setState(() {
-          _currentPositionForBias = LatLng(finalPosition.latitude, finalPosition.longitude);
-        });
-      }
     } catch (e) {
       debugPrint("Erro ao obter GPS para o viés: $e");
-      _setFallbackBias();
-    }
-  }
-
-  void _setFallbackBias() {
-    if (mounted) {
-      setState(() {
-        _currentPositionForBias = const LatLng(-29.3385, -49.7291);
-      });
     }
   }
 
@@ -96,6 +103,8 @@ class _RouteHeaderState extends State<RouteHeader> {
     if (apiKey.isEmpty) return;
 
     String url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$apiKey&language=pt-BR&components=country:br';
+
+    //se achou no cache ou no GPS real, envia a busca para a região
     if (_currentPositionForBias != null) {
       double lat = _currentPositionForBias!.latitude;
       double lng = _currentPositionForBias!.longitude;
