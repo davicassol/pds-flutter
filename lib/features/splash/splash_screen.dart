@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -54,9 +55,8 @@ class _SplashScreenState extends State<SplashScreen>
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.blue,
-                  Color(0xFF1E40AF),
-                  Color(0xFF1E3A8A),
+                  AppColors.primaryBlue,
+                  AppColors.primaryDark,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -75,12 +75,12 @@ class _SplashScreenState extends State<SplashScreen>
                         width: 100,
                         height: 100,
                         decoration: const BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surfaceWhite,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.water_drop,
-                          color: Colors.blue,
+                          color: AppColors.primaryBlue,
                           size: 50,
                         ),
                       ),
@@ -89,20 +89,21 @@ class _SplashScreenState extends State<SplashScreen>
 
                       // Título
                       const Text(
-                        "FloodWatch",
+                        AppColors.appName,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textWhite,
                           fontSize: 32,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
 
                       const SizedBox(height: 8),
 
                       // Subtítulo
-                      const Text(
+                      Text(
                         "Esteja Seguro, Esteja Informado",
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: AppColors.textWhite.withOpacity(0.7),
                           fontSize: 16,
                         ),
                       ),
@@ -111,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                       // Loader
                       const CircularProgressIndicator(
-                        color: Colors.white,
+                        color: AppColors.surfaceWhite,
                       ),
                     ],
                   ),

@@ -31,7 +31,6 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
     super.dispose();
   }
 
-  //escuta quando o app volta do sistema operacional
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -42,7 +41,6 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
   Future<void> _loadData({bool isBackgroundResume = false}) async {
     final provider = context.read<WeatherProvider>();
 
-    //só mostra a tela de carregando se for a primeira vez
     if (!isBackgroundResume) {
       provider.isLoading = true;
       provider.notifyListeners();
@@ -82,7 +80,7 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
         ),
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         body: SafeArea(
           child: provider.isLoading
               ? const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue))
@@ -138,7 +136,7 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
   Widget _buildBlueRiskCard(WeatherProvider provider) {
     double rainToday = provider.weeklyRainfall.isNotEmpty ? provider.weeklyRainfall.last : 0.0;
 
-    Color accentColor = provider.riskLevel.toLowerCase() == 'alto' ? Colors.redAccent : Colors.white;
+    Color accentColor = provider.riskLevel.toLowerCase() == 'alto' ? AppColors.alertHigh : AppColors.surfaceWhite;
 
     return Container(
       width: double.infinity,
@@ -156,14 +154,14 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
             right: -40, top: -40,
             child: Container(
               width: 160, height: 160,
-              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white.withOpacity(0.15), width: 1)),
+              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.surfaceWhite.withOpacity(0.15), width: 1)),
             ),
           ),
           Positioned(
             left: 20, bottom: -80,
             child: Container(
               width: 200, height: 200,
-              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white.withOpacity(0.1), width: 1)),
+              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.surfaceWhite.withOpacity(0.1), width: 1)),
             ),
           ),
 
@@ -178,10 +176,10 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                      decoration: BoxDecoration(color: AppColors.surfaceWhite.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
                       child: Icon(Icons.water_drop, color: accentColor, size: 24),
                     ),
-                    Text(provider.lastUpdateTime, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                    Text(provider.lastUpdateTime, style: TextStyle(color: AppColors.textWhite.withOpacity(0.7), fontSize: 12)),
                   ],
                 ),
                 Column(
@@ -194,7 +192,7 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
                     const SizedBox(height: 4),
                     Text(
                       "Previsão: ${rainToday.toStringAsFixed(1)}mm hoje.",
-                      style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
+                      style: TextStyle(color: AppColors.textWhite.withOpacity(0.9), fontSize: 14),
                     ),
                   ],
                 ),
@@ -211,10 +209,10 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F1E44),
+        color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF0F1E44).withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10))
+          BoxShadow(color: AppColors.surfaceDark.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10))
         ],
       ),
       child: Column(
@@ -222,17 +220,17 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
         children: [
           Row(
             children: [
-              Icon(Icons.phone_in_talk, color: Colors.white.withOpacity(0.9), size: 20),
+              Icon(Icons.phone_in_talk, color: AppColors.textWhite.withOpacity(0.9), size: 20),
               const SizedBox(width: 12),
-              const Text("Emergência", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+              const Text("Emergência", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textWhite)),
             ],
           ),
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(child: _buildEmergencyButton("Defesa Civil", "199", Colors.white.withOpacity(0.1))),
+              Expanded(child: _buildEmergencyButton("Defesa Civil", "199", AppColors.surfaceWhite.withOpacity(0.1))),
               const SizedBox(width: 12),
-              Expanded(child: _buildEmergencyButton("Bombeiros", "193", Colors.white.withOpacity(0.1))),
+              Expanded(child: _buildEmergencyButton("Bombeiros", "193", AppColors.surfaceWhite.withOpacity(0.1))),
             ],
           )
         ],
@@ -244,7 +242,7 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.textWhite,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -259,7 +257,6 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
     );
   }
 
-  //mostra a tela de erro
   Widget _buildEmptyState(String message, IconData icon) {
     return Center(
       child: Padding(

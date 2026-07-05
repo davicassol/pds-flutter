@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 import '../../features/map/screens/home_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/statistics/screens/rain_statistics_screen.dart';
@@ -13,7 +14,7 @@ class MainLayoutScreen extends StatefulWidget {
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _currentIndex = 0;
 
-  //Chave de controle para a tela de notificações
+  //chave de controle para a tela de notificações
   Key _notificationsKey = UniqueKey();
 
   @override
@@ -29,8 +30,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: AppColors.primaryBlue,
+        unselectedItemColor: AppColors.iconGrey,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() {

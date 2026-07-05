@@ -4,6 +4,7 @@ import '../widgets/custom_drawer.dart';
 import 'package:tcc_alagouai/features/routes/services/route_service.dart';
 import 'package:tcc_alagouai/features/routes/widgets/route_header.dart';
 import 'package:tcc_alagouai/features/routes/widgets/route_info_card.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -93,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 220,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
+                        backgroundColor: AppColors.actionCancel,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                         elevation: 4,
@@ -103,10 +104,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           _isNavigating = false;
                         });
                       },
-                      icon: const Icon(Icons.close_rounded, color: Colors.white),
+                      icon: const Icon(Icons.close_rounded, color: AppColors.textWhite),
                       label: const Text(
                           "Sair da Navegação",
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)
+                          style: TextStyle(color: AppColors.textWhite, fontSize: 16, fontWeight: FontWeight.bold)
                       ),
                     ),
                   ),
@@ -119,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
       //botão de reporte
       floatingActionButton: FloatingActionButton(
         heroTag: "report_btn",
-        backgroundColor: const Color(0xFF2B66F6),
+        backgroundColor: AppColors.primaryBlue,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -127,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           Navigator.pushNamed(context, '/report');
         },
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
+        child: const Icon(Icons.add, color: AppColors.textWhite, size: 28),
       ),
     );
   }

@@ -37,13 +37,12 @@ class CorrelationChart extends StatelessWidget {
 
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
-                  getTooltipColor: (touchedSpot) => const Color(0xFF0F1E44),
+                  getTooltipColor: (touchedSpot) => AppColors.surfaceDark,
                   tooltipRoundedRadius: 12,
                   getTooltipItems: (List<LineBarSpot> touchedSpots) {
                     return touchedSpots.map((spot) {
                       final isRain = spot.barIndex == 0;
 
-                      //se for chuva, exibe com 1 casa decimal
                       String textoDoBalao = isRain
                           ? spot.y.toStringAsFixed(1)
                           : (spot.y / 5).toInt().toString();
@@ -69,7 +68,6 @@ class CorrelationChart extends StatelessWidget {
                 LineChartBarData(
                   spots: rainSpots.isEmpty ? const [FlSpot(0, 0)] : rainSpots,
                   isCurved: true,
-                  //evita que o gráfico fiquei negativo
                   preventCurveOverShooting: true,
                   color: AppColors.alertLow,
                   barWidth: 4,
@@ -84,7 +82,6 @@ class CorrelationChart extends StatelessWidget {
                 LineChartBarData(
                   spots: alertSpots.isEmpty ? const [FlSpot(0, 0)] : alertSpots,
                   isCurved: true,
-                  //evita que o gráfico fiquei negativo
                   preventCurveOverShooting: true,
                   color: AppColors.alertHigh,
                   barWidth: 3,

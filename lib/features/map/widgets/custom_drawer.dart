@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const Color brandBlue = Color(0xFF2B66F6);
     //pega o usuário atual logado
     final User? user = FirebaseAuth.instance.currentUser;
     final String displayName = user?.displayName ?? "Usuário";
@@ -14,19 +14,19 @@ class CustomDrawer extends StatelessWidget {
     final String? photoUrl = user?.photoURL; // URL da foto do Firebase
 
     return Drawer(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       elevation: 0,
       child: Container(
         margin: const EdgeInsets.only(top: 30, bottom: 30, right: 80),
         decoration: BoxDecoration(
-          color: brandBlue,
+          color: AppColors.primaryBlue,
           borderRadius: const BorderRadius.only(
             topRight: Radius.circular(40),
             bottomRight: Radius.circular(40),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: AppColors.shadowColor,
               blurRadius: 20,
               offset: const Offset(5, 5),
             ),
@@ -45,16 +45,16 @@ class CustomDrawer extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surfaceWhite,
                         shape: BoxShape.circle,
                       ),
                       child: CircleAvatar(
                         radius: 32,
-                        backgroundColor: Colors.white,
+                        backgroundColor: AppColors.surfaceWhite,
                         //se houver URL no Firebase exibe a imagem ,caso contrário mostra o ícone de pessoa padrão
                         backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
                         child: photoUrl == null
-                            ? const Icon(Icons.person, size: 36, color: brandBlue)
+                            ? const Icon(Icons.person, size: 36, color: AppColors.primaryBlue)
                             : null,
                       ),
                     ),
@@ -63,7 +63,7 @@ class CustomDrawer extends StatelessWidget {
                     Text(
                       displayName,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textWhite,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -73,7 +73,7 @@ class CustomDrawer extends StatelessWidget {
                     Text(
                       displayEmail,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: AppColors.textWhite.withOpacity(0.7),
                         fontSize: 14,
                       ),
                     ),
@@ -83,7 +83,7 @@ class CustomDrawer extends StatelessWidget {
 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Divider(color: Colors.white.withOpacity(0.2), thickness: 1),
+                child: Divider(color: AppColors.textWhite.withOpacity(0.2), thickness: 1),
               ),
               const SizedBox(height: 16),
               _buildMenuItem(context, Icons.person_outline, "Meu Perfil", '/profile'),
@@ -92,13 +92,13 @@ class CustomDrawer extends StatelessWidget {
 
               const Spacer(),
 
-              //botão de logouy
+              //botão de logout
               ListTile(
-                leading: const Icon(Icons.logout, color: Colors.white, size: 26),
+                leading: const Icon(Icons.logout, color: AppColors.textWhite, size: 26),
                 title: const Text(
                   "Sair",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textWhite,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -111,7 +111,7 @@ class CustomDrawer extends StatelessWidget {
                     Navigator.pushReplacementNamed(context, '/login');
                   }
                 },
-                splashColor: Colors.white.withOpacity(0.1),
+                splashColor: AppColors.textWhite.withOpacity(0.1),
               ),
               const SizedBox(height: 20),
             ],
@@ -123,11 +123,11 @@ class CustomDrawer extends StatelessWidget {
 
   Widget _buildMenuItem(BuildContext context, IconData icon, String title, String routeName) {
     return ListTile(
-      leading: Icon(icon, color: Colors.white, size: 26),
+      leading: Icon(icon, color: AppColors.textWhite, size: 26),
       title: Text(
         title,
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.textWhite,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
@@ -139,8 +139,8 @@ class CustomDrawer extends StatelessWidget {
           Navigator.pushNamed(context, routeName);
         }
       },
-      splashColor: Colors.white.withOpacity(0.1),
-      hoverColor: Colors.transparent,
+      splashColor: AppColors.textWhite.withOpacity(0.1),
+      hoverColor: AppColors.transparent,
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   const VerifyEmailScreen({super.key});
@@ -17,14 +18,13 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     });
 
     try {
-      //pega o usuário que acabou de se cadastrar e reenvia o e-mail de verificação
       await FirebaseAuth.instance.currentUser?.sendEmailVerification();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Link de verificação reenviado com sucesso!"),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.successMain,
         ),
       );
     } catch (e) {
@@ -32,7 +32,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Erro ao reenviar: $e"),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.alertHigh,
         ),
       );
     }
@@ -50,7 +50,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
+            colors: [AppColors.gradientStart, AppColors.gradientEnd],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -67,12 +67,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     width: 100,
                     height: 100,
                     decoration: const BoxDecoration(
-                      color: Colors.blue,
+                      color: AppColors.primaryBlue,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.mark_email_unread_rounded,
-                      color: Colors.white,
+                      color: AppColors.surfaceWhite,
                       size: 50,
                     ),
                   ),
@@ -83,7 +83,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: AppColors.primaryBlue,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -92,12 +92,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surfaceWhite,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: const [
                         BoxShadow(
                           blurRadius: 10,
-                          color: Colors.black12,
+                          color: AppColors.shadowColor,
                         )
                       ],
                     ),
@@ -108,7 +108,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.black87,
+                            color: AppColors.textBlack,
                             height: 1.4,
                           ),
                         ),
@@ -120,32 +120,31 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           height: 50,
                           child: ElevatedButton(
                             onPressed: () {
-                              //volta pro login
                               Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
+                              backgroundColor: AppColors.primaryBlue,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: const Text(
                               "Ir para o Login",
-                              style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 16, color: AppColors.textWhite, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
                         const SizedBox(height: 16),
 
-                        //reenviar email, caso bug
+                        //reenviar email
                         isResending
-                            ? const CircularProgressIndicator(color: Colors.blue)
+                            ? const CircularProgressIndicator(color: AppColors.primaryBlue)
                             : TextButton.icon(
                           onPressed: handleResendEmail,
-                          icon: const Icon(Icons.refresh_rounded, color: Colors.blue),
+                          icon: const Icon(Icons.refresh_rounded, color: AppColors.primaryBlue),
                           label: const Text(
                             "Não recebi o e-mail (Reenviar)",
-                            style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600),
+                            style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ],

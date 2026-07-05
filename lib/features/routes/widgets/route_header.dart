@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:tcc_alagouai/features/report/services/report_service.dart';
 import 'package:tcc_alagouai/features/routes/services/route_service.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class RouteHeader extends StatefulWidget {
   final Function(SafeRouteResult) onRouteCalculated;
@@ -64,8 +65,7 @@ class _RouteHeaderState extends State<RouteHeader> {
           _currentPositionForBias = LatLng(cachedPosition.latitude, cachedPosition.longitude);
         });
       } else {
-        //se o cache estiver vazio
-        //injeta temporariamente localização mockada de torres
+        //se o cache estiver vazio injeta temporariamente localização mockada
         if (mounted) {
           setState(() {
             _currentPositionForBias = const LatLng(-29.3385, -49.7291);
@@ -73,7 +73,7 @@ class _RouteHeaderState extends State<RouteHeader> {
         }
       }
 
-      // busca a posição real em segundo plano para confirmar/corrigir a temporária
+      //busca a posição real em segundo plano para confirmar/corrigir a temporária
       Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low).then((finalPosition) {
         if (mounted) {
           setState(() {
@@ -235,11 +235,11 @@ class _RouteHeaderState extends State<RouteHeader> {
           //searchbar
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surfaceWhite,
               borderRadius: BorderRadius.circular(30),
               boxShadow: const [
                 BoxShadow(
-                    color: Colors.black12,
+                    color: AppColors.shadowColor,
                     blurRadius: 10,
                     offset: Offset(0, 4)
                 ),
@@ -259,14 +259,14 @@ class _RouteHeaderState extends State<RouteHeader> {
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.blue.withOpacity(0.3), width: 2),
+                      border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3), width: 2),
                     ),
                     child: CircleAvatar(
                       radius: 20,
-                      backgroundColor: Colors.blue.withOpacity(0.1),
+                      backgroundColor: AppColors.primaryBlue.withOpacity(0.1),
                       backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
                       child: photoUrl == null
-                          ? const Icon(Icons.person, size: 24, color: Colors.blue)
+                          ? const Icon(Icons.person, size: 24, color: AppColors.primaryBlue)
                           : null,
                     ),
                   ),
@@ -283,17 +283,17 @@ class _RouteHeaderState extends State<RouteHeader> {
                     onSubmitted: (_) => _handleCalculateRoute(),
                     decoration: InputDecoration(
                       hintText: "Para onde vamos?",
-                      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 16),
+                      hintStyle: const TextStyle(color: AppColors.textGreyLight, fontSize: 16),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
                 ),
 
-                // Botão Limpar (X)
+                //Botão Limpar (X)
                 if (destinationController.text.isNotEmpty)
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.grey, size: 20),
+                    icon: const Icon(Icons.close_rounded, color: AppColors.iconGrey, size: 20),
                     onPressed: () {
                       destinationController.clear();
                       setState(() { _placeList = []; });
@@ -303,7 +303,7 @@ class _RouteHeaderState extends State<RouteHeader> {
                 Container(
                   height: 24,
                   width: 1,
-                  color: Colors.grey[300],
+                  color: AppColors.dividerGrey,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                 ),
 
@@ -314,16 +314,16 @@ class _RouteHeaderState extends State<RouteHeader> {
                     margin: const EdgeInsets.all(6),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.blue,
+                      color: AppColors.primaryBlue,
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: _isLoading
                         ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                        child: CircularProgressIndicator(color: AppColors.textWhite, strokeWidth: 2)
                     )
-                        : const Icon(Icons.directions_rounded, color: Colors.white, size: 20),
+                        : const Icon(Icons.directions_rounded, color: AppColors.textWhite, size: 20),
                   ),
                 ),
               ],
@@ -336,10 +336,10 @@ class _RouteHeaderState extends State<RouteHeader> {
               margin: const EdgeInsets.only(top: 8),
               constraints: const BoxConstraints(maxHeight: 250),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surfaceWhite,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))
+                  BoxShadow(color: AppColors.shadowColor, blurRadius: 10, offset: Offset(0, 4))
                 ],
               ),
               child: ClipRRect(
@@ -348,7 +348,7 @@ class _RouteHeaderState extends State<RouteHeader> {
                   shrinkWrap: true,
                   padding: EdgeInsets.zero,
                   itemCount: _placeList.length,
-                  separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey[200]),
+                  separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.dividerGrey),
                   itemBuilder: (context, index) {
                     var place = _placeList[index];
                     String mainText = place['structured_formatting']?['main_text'] ?? place['description'];
@@ -357,15 +357,15 @@ class _RouteHeaderState extends State<RouteHeader> {
                     return ListTile(
                       leading: Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
+                        decoration: const BoxDecoration(
+                          color: AppColors.surfaceGrey,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.location_on_rounded, color: Colors.grey, size: 20),
+                        child: const Icon(Icons.location_on_rounded, color: AppColors.iconGrey, size: 20),
                       ),
                       title: Text(mainText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                       subtitle: secondaryText.isNotEmpty
-                          ? Text(secondaryText, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600], fontSize: 13))
+                          ? Text(secondaryText, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textGreyMedium, fontSize: 13))
                           : null,
                       onTap: () {
                         _onPlaceSelected(place['description']);

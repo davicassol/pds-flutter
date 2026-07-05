@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:ui' as ui;
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,7 +6,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tcc_alagouai/features/report/services/report_service.dart';
 import 'package:tcc_alagouai/core/constants/app_colors.dart';
 import 'package:tcc_alagouai/features/routes/services/route_service.dart';
-import 'package:tcc_alagouai/features/routes/services/route_simulator.dart'; // Import do seu novo serviço
+import 'package:tcc_alagouai/features/routes/services/route_simulator.dart';
+import 'package:tcc_alagouai/features/map/widgets/feedback_popup.dart';
+import 'package:tcc_alagouai/features/map/widgets/location_permission_warning.dart';
+import 'package:tcc_alagouai/features/map/widgets/report_details_sheet.dart';
+import 'package:tcc_alagouai/features/map/widgets/my_location_button.dart';
 import 'legend_widget.dart';
 
 class MapView extends StatefulWidget {
@@ -28,17 +30,20 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   bool _isInitializing = true;
   bool _hasPermission = true;
   LatLng _userInitialPosition = const LatLng(-29.3385, -49.7291);
-
   Position? _currentPosition;
 
-  //INSTÂNCIA DO SIMULADOR (False como padrão geração de apks e uso real)
   final RouteSimulator _simulator = RouteSimulator();
-  final bool _isSimulating = false; // TRUE = carro anda sozinho | FALSE = usa o GPS real da rua
+  final bool _isSimulating = false;
 
   double _lastValidHeading = 0.0;
   bool _isFinishingRoute = false;
-
   StreamSubscription<Position>? _positionStreamSubscription;
+
+  //controle do radar/popup
+  String? _popupReportId;
+  String? _popupStreetName;
+  final Set<String> _askedReports = {};
+  final List<Map<String, dynamic>> _currentActiveReports = [];
 
   @override
   void initState() {
@@ -51,7 +56,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _positionStreamSubscription?.cancel();
-    _simulator.stop(); //garante que o cronômetro desligue ao fechar a tela
+    _simulator.stop();
     super.dispose();
   }
 
@@ -71,10 +76,10 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
       _moveCameraToUser();
     }
 
-    // Controle de Início/Fim da Navegação
+    //inicio/fim da negagação
     if (widget.isNavigating && !oldWidget.isNavigating) {
       if (_isSimulating && widget.activeRoute != null) {
-        // Pausa o GPS real e inicia o carro fantasma
+        //pausa o GPS real e inicia o emulador
         _positionStreamSubscription?.pause();
         _simulator.start(
           points: widget.activeRoute!.points,
@@ -85,116 +90,58 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
               _lastValidHeading = mockPosition.heading;
             });
             _moveCameraToPosition(mockPosition);
+            _checkProximityToFloods(mockPosition);
           },
-          onFinished: () {
-            _finalizarRota();
-          },
+          onFinished: () => _finalizarRota(),
         );
       } else {
-        _moveCameraToUser(force3D: true);
+        _moveCameraToUser();
       }
     } else if (!widget.isNavigating && oldWidget.isNavigating) {
-      //quando sai da navegação, força a voltar pra visão de cima e desliga o simulador
       if (_isSimulating) {
         _simulator.stop();
-        _positionStreamSubscription?.resume(); //liga o GPS real de volta
+        _positionStreamSubscription?.resume();
       }
       _moveCameraToUser();
       _fitRouteOnMap();
     }
   }
 
-  void _fitRouteOnMap() {
-    if (widget.activeRoute == null || widget.activeRoute!.points.isEmpty || mapController == null) return;
-    double minLat = widget.activeRoute!.points.first.latitude;
-    double minLng = widget.activeRoute!.points.first.longitude;
-    double maxLat = widget.activeRoute!.points.first.latitude;
-    double maxLng = widget.activeRoute!.points.first.longitude;
-    for (var point in widget.activeRoute!.points) {
-      if (point.latitude < minLat) minLat = point.latitude;
-      if (point.latitude > maxLat) maxLat = point.latitude;
-      if (point.longitude < minLng) minLng = point.longitude;
-      if (point.longitude > maxLng) maxLng = point.longitude;
-    }
-    LatLngBounds bounds = LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
-    mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
-  }
+  void _checkProximityToFloods(Position position) {
+    if (_popupReportId != null) return;
 
-  Future<void> _moveCameraToUser({bool force3D = false}) async {
-    if (mapController == null || _currentPosition == null) return;
+    for (var report in _currentActiveReports) {
+      String id = report['id'];
+      if (_askedReports.contains(id)) continue;
 
-    if (force3D || widget.isNavigating) {
-      mapController!.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-            zoom: 18.5,
-            tilt: 60.0,
-            bearing: _lastValidHeading,
-          ),
-        ),
-      );
-    } else {
-      mapController!.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-            zoom: 16.0,
-            tilt: 0.0,
-            bearing: 0.0,
-          ),
-        ),
-      );
+      double lat = report['lat'];
+      double lng = report['lng'];
+      double distance = Geolocator.distanceBetween(position.latitude, position.longitude, lat, lng);
+
+      if (distance <= 80.0) {
+        setState(() {
+          _popupReportId = id;
+          _popupStreetName = report['streetName'] ?? 'Rua Desconhecida';
+        });
+        _askedReports.add(id);
+        break;
+      }
     }
   }
 
-  void _finalizarRota() {
-    if (_isFinishingRoute) return;
-    _isFinishingRoute = true;
-
-    showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Column(
-              children: [
-                Icon(Icons.check_circle_rounded, color: Colors.green, size: 60),
-                SizedBox(height: 16),
-                Text("Você chegou!", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkNavy)),
-              ],
-            ),
-            content: const Text("Você chegou ao seu destino final.", textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
-            actionsAlignment: MainAxisAlignment.center,
-            actions: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  _isFinishingRoute = false;
-                  if (widget.onRouteFinished != null) {
-                    widget.onRouteFinished!();
-                  }
-                },
-                child: const Text("Concluir", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              )
-            ],
-          );
-        }
+  void _showReportDetailsSheet(Map<String, dynamic> data) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+      builder: (context) => ReportDetailsSheet(data: data, currentPosition: _currentPosition),
     );
   }
 
   Future<void> _startLocationUpdates({bool isBackgroundResume = false}) async {
     if (!mounted) return;
-
-    if (!isBackgroundResume) {
-      setState(() { _isInitializing = true; });
-    }
+    if (!isBackgroundResume) setState(() { _isInitializing = true; });
 
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -221,28 +168,15 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
           if (_currentPosition == null) _currentPosition = cachedPosition;
         });
       }
-    } catch (e) {
-      // ignora e deixa o stream cuidar
-    }
+    } catch (_) {}
 
-    if (mounted) {
-      setState(() { _isInitializing = false; });
-    }
-
+    if (mounted) setState(() { _isInitializing = false; });
     _positionStreamSubscription?.cancel();
 
-    LocationSettings locationSettings = const LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 2,
-    );
-
     _positionStreamSubscription = Geolocator.getPositionStream(
-      locationSettings: locationSettings,
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 2),
     ).listen((Position position) {
-      if (!mounted) return;
-
-      //se o simulador estiver rodando, ignora as posições reais da rua
-      if (_simulator.isRunning) return;
+      if (!mounted || _simulator.isRunning) return;
 
       setState(() {
         _currentPosition = position;
@@ -253,161 +187,93 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
         }
       });
 
+      _checkProximityToFloods(position);
+
       if (widget.isNavigating && widget.activeRoute != null) {
         LatLng destino = widget.activeRoute!.points.last;
-        double distancia = Geolocator.distanceBetween(
-          position.latitude, position.longitude,
-          destino.latitude, destino.longitude,
-        );
-
+        double distancia = Geolocator.distanceBetween(position.latitude, position.longitude, destino.latitude, destino.longitude);
         if (distancia <= 60.0) {
           _finalizarRota();
           return;
         }
       }
 
-      if (widget.isNavigating) {
-        _moveCameraToPosition(position);
-      } else if (widget.activeRoute == null) {
-        _moveCameraToPosition(position);
-      }
+      _moveCameraToPosition(position);
     });
   }
 
   void _moveCameraToPosition(Position position) {
-    if (mapController != null) {
-      if (widget.isNavigating) {
-        mapController!.moveCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(position.latitude, position.longitude),
-              zoom: 18.5,
-              tilt: 60.0,
-              bearing: _lastValidHeading,
-            ),
-          ),
-        );
-      } else {
-        mapController!.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(position.latitude, position.longitude),
-              zoom: 16.0,
-              tilt: 0.0,
-              bearing: 0.0,
-            ),
-          ),
-        );
-      }
-    }
+    if (mapController == null) return;
+    mapController!.moveCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(position.latitude, position.longitude),
+          zoom: widget.isNavigating ? 18.5 : 16.0,
+          tilt: widget.isNavigating ? 60.0 : 0.0,
+          bearing: widget.isNavigating ? _lastValidHeading : 0.0,
+        ),
+      ),
+    );
   }
 
-  void _onMapCreated(GoogleMapController controller) {
-    mapController = controller;
+  Future<void> _moveCameraToUser() async {
+    if (_currentPosition != null) _moveCameraToPosition(_currentPosition!);
+  }
+
+  void _fitRouteOnMap() {
+    if (widget.activeRoute == null || widget.activeRoute!.points.isEmpty || mapController == null) return;
+    double minLat = widget.activeRoute!.points.first.latitude;
+    double minLng = widget.activeRoute!.points.first.longitude;
+    double maxLat = widget.activeRoute!.points.first.latitude;
+    double maxLng = widget.activeRoute!.points.first.longitude;
+    for (var point in widget.activeRoute!.points) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLng) minLng = point.longitude;
+      if (point.longitude > maxLng) maxLng = point.longitude;
+    }
+    mapController!.animateCamera(CameraUpdate.newLatLngBounds(LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng)), 80));
   }
 
   Color _getColor(String level) {
-    String safeLevel = level.toLowerCase();
-    if (safeLevel == 'low') return AppColors.alertLow;
-    if (safeLevel == 'medium') return AppColors.alertMedium;
+    if (level.toLowerCase() == 'low') return AppColors.alertLow;
+    if (level.toLowerCase() == 'medium') return AppColors.alertMedium;
     return AppColors.alertHigh;
   }
 
   double _getRadius(String level) {
-    String safeLevel = level.toLowerCase();
-    if (safeLevel == 'low') return 15.0;
-    if (safeLevel == 'medium') return 20.0;
+    if (level.toLowerCase() == 'low') return 15.0;
+    if (level.toLowerCase() == 'medium') return 20.0;
     return 30.0;
   }
 
-  void _showReportDetails(BuildContext context, Map<String, dynamic> data) {
-    final level = data['floodLevel'] ?? 'high';
-    final street = data['streetName'] ?? 'Rua Desconhecida';
-    final imageUrl = data['imageUrl'];
-    final userName = data['userName'] ?? 'Anônimo';
-
-    final severityColor = _getColor(level);
-    final String nivelTraduzido = level.toLowerCase() == 'low'
-        ? "BAIXO RISCO"
-        : (level.toLowerCase() == 'medium' ? "MÉDIO RISCO" : "ALTO RISCO");
-
-    showModalBottomSheet(
+  void _finalizarRota() {
+    if (_isFinishingRoute) return;
+    _isFinishingRoute = true;
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(width: 40, height: 5, decoration: BoxDecoration(color: AppColors.primaryBlue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10))),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: severityColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(color: severityColor, shape: BoxShape.circle)),
-                    const SizedBox(width: 8),
-                    Text(nivelTraduzido, style: TextStyle(color: severityColor, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(street, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.darkNavy, height: 1.1)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.person_pin_circle_rounded, size: 16, color: AppColors.textGreyBlue),
-                  const SizedBox(width: 6),
-                  Text("Reportado por: $userName", style: const TextStyle(fontSize: 14, color: AppColors.textGreyBlue, fontWeight: FontWeight.w600)),
-                ],
-              ),
-              const SizedBox(height: 24),
-              if (imageUrl != null && imageUrl.toString().isNotEmpty)
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: AppColors.darkNavy.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 10))],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.network(
-                      imageUrl, width: double.infinity, height: 280, fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
-                    ),
-                  ),
-                )
-              else
-                _buildImagePlaceholder(),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildImagePlaceholder() {
-    return Container(
-      height: 160,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.primaryBlue.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.08), width: 2),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.image_not_supported_rounded, size: 48, color: AppColors.primaryBlue.withValues(alpha: 0.15)),
-          const SizedBox(height: 12),
-          Text("Nenhuma evidência visual anexada", style: TextStyle(color: AppColors.primaryBlue.withValues(alpha: 0.4), fontWeight: FontWeight.w700, fontSize: 13)),
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Column(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.green, size: 60),
+            SizedBox(height: 16),
+            Text("Você chegou!", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkNavy)),
+          ],
+        ),
+        content: const Text("Você chegou ao seu destino final.", textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)),
+            onPressed: () {
+              Navigator.pop(context);
+              _isFinishingRoute = false;
+              if (widget.onRouteFinished != null) widget.onRouteFinished!();
+            },
+            child: const Text("Concluir", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          )
         ],
       ),
     );
@@ -415,46 +281,8 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (_isInitializing) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue));
-    }
-
-    if (!_hasPermission) {
-      return Container(
-        color: const Color(0xFFEFF6FF),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.location_off_rounded, size: 80, color: AppColors.primaryBlue.withValues(alpha: 0.5)),
-                const SizedBox(height: 24),
-                const Text("Localização Negada", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.darkNavy), textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                const Text("O aplicativo precisa da sua localização para exibir o mapa e calcular as rotas seguras.", textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: AppColors.textGreyBlue)),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: () { _startLocationUpdates(); },
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                    icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                    label: const Text("Tentar Novamente", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () { Geolocator.openAppSettings(); },
-                  child: const Text("Abrir Configurações", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                )
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    if (_isInitializing) return const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue));
+    if (!_hasPermission) return LocationPermissionWarning(onRetry: () => _startLocationUpdates());
 
     return StreamBuilder<QuerySnapshot>(
       stream: ReportService().getActiveReports(),
@@ -463,8 +291,12 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
         Set<Circle> circles = {};
 
         if (snapshot.hasData) {
+          _currentActiveReports.clear();
           for (var doc in snapshot.data!.docs) {
             final data = doc.data() as Map<String, dynamic>;
+            data['id'] = doc.id;
+            _currentActiveReports.add(data);
+
             if (data['lat'] != null && data['lng'] != null) {
               final pos = LatLng(data['lat'], data['lng']);
               final level = data['floodLevel'] ?? 'high';
@@ -477,7 +309,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
                 markerId: MarkerId(doc.id),
                 position: pos,
                 icon: BitmapDescriptor.defaultMarkerWithHue(markerHue),
-                onTap: () => _showReportDetails(context, data),
+                onTap: () => _showReportDetailsSheet(data),
               ));
 
               circles.add(Circle(
@@ -493,51 +325,25 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
         }
 
         if (widget.activeRoute != null && widget.activeRoute!.points.isNotEmpty) {
-          markers.add(Marker(
-            markerId: const MarkerId('start_point'),
-            position: widget.activeRoute!.points.first,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          ));
-          markers.add(Marker(
-            markerId: const MarkerId('end_point'),
-            position: widget.activeRoute!.points.last,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          ));
+          markers.add(Marker(markerId: const MarkerId('start_point'), position: widget.activeRoute!.points.first, icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)));
+          markers.add(Marker(markerId: const MarkerId('end_point'), position: widget.activeRoute!.points.last, icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue)));
         }
 
-        // ... (código dos marcadores de alagamento)
-
-        // Marcadores de início e fim da rota (já estão no seu código)
-        if (widget.activeRoute != null && widget.activeRoute!.points.isNotEmpty) {
-          markers.add(Marker(
-            markerId: const MarkerId('start_point'),
-            position: widget.activeRoute!.points.first,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          ));
-          markers.add(Marker(
-            markerId: const MarkerId('end_point'),
-            position: widget.activeRoute!.points.last,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          ));
-        }
-
-        // NOVO: Adiciona um pino azul para representar o carro SÓ durante a simulação
         if (_isSimulating && _simulator.isRunning && _currentPosition != null) {
           markers.add(Marker(
             markerId: const MarkerId('simulated_car'),
             position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
             rotation: _lastValidHeading,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure), // Um pino azul claro
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
             anchor: const Offset(0.5, 0.5),
-            zIndex: 999,
+            zIndexInt: 999,
           ));
         }
-
 
         return Stack(
           children: [
             GoogleMap(
-              onMapCreated: _onMapCreated,
+              onMapCreated: (controller) => mapController = controller,
               initialCameraPosition: CameraPosition(target: _userInitialPosition, zoom: 16.0),
               myLocationEnabled: true,
               myLocationButtonEnabled: false,
@@ -557,21 +363,29 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
                   ),
               },
             ),
-            if (!widget.isNavigating)
-              Positioned(
-                bottom: widget.activeRoute != null ? 240 : 90,
-                right: 16,
-                child: FloatingActionButton(
-                  heroTag: "my_location_btn",
-                  elevation: 4,
-                  backgroundColor: Colors.white.withValues(alpha: 0.9),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  onPressed: () { _moveCameraToUser(); },
-                  child: const Icon(Icons.my_location_rounded, color: Colors.black87, size: 26),
-                ),
-              ),
+
+            MyLocationButton(
+              isNavigating: widget.isNavigating,
+              hasActiveRoute: widget.activeRoute != null,
+              onPressed: () => _moveCameraToUser(),
+            ),
+
             if (!widget.isNavigating)
               const Positioned(bottom: 22, left: 32, child: LegendWidget()),
+
+            if (widget.isNavigating && _popupReportId != null)
+              Positioned(
+                top: 60,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  child: FeedbackPopup(
+                    reportId: _popupReportId!,
+                    streetName: _popupStreetName!,
+                    onDismissed: () => setState(() => _popupReportId = null),
+                  ),
+                ),
+              ),
           ],
         );
       },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -47,14 +48,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     if (erro == null) {
-      //manda o usuário para verificação
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/verify-email');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(erro),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.alertHigh,
         ),
       );
     }
@@ -79,7 +79,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
+            colors: [AppColors.gradientStart, AppColors.gradientEnd],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -95,7 +95,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.blue),
+                        icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlue),
                         onPressed: () => Navigator.pop(context),
                       ),
                       const SizedBox(width: 8),
@@ -104,7 +104,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                          color: AppColors.primaryBlue,
                         ),
                       ),
                     ],
@@ -119,16 +119,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         width: 64,
                         height: 64,
                         decoration: const BoxDecoration(
-                          color: Colors.blue,
+                          color: AppColors.primaryBlue,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.water_drop,
-                            color: Colors.white, size: 32),
+                            color: AppColors.surfaceWhite, size: 32),
                       ),
                       const SizedBox(height: 12),
                       const Text(
                         "Junte-se ao FloodWatch",
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(color: AppColors.textGreyMedium),
                       ),
                     ],
                   ),
@@ -139,12 +139,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surfaceWhite,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: const [
                         BoxShadow(
                           blurRadius: 10,
-                          color: Colors.black12,
+                          color: AppColors.shadowColor,
                         )
                       ],
                     ),
@@ -152,7 +152,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       children: [
                         TextField(
                           controller: nameController,
-                          textCapitalization: TextCapitalization.words, //ajuda a iniciar o nome com maiúscula
+                          textCapitalization: TextCapitalization.words,
                           decoration: buildInputDecoration("Nome Completo", "João Pedro"),
                         ),
                         const SizedBox(height: 16),
@@ -185,7 +185,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           child: ElevatedButton(
                             onPressed: isLoading ? null : handleSignUp,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
+                              backgroundColor: AppColors.primaryBlue,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -194,10 +194,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ? const SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                child: CircularProgressIndicator(color: AppColors.surfaceWhite, strokeWidth: 2))
                                 : const Text(
                               "Criar Conta",
-                              style: TextStyle(fontSize: 16, color: Colors.white),
+                              style: TextStyle(fontSize: 16, color: AppColors.textWhite),
                             ),
                           ),
                         ),
@@ -216,7 +216,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         onTap: () => Navigator.pop(context),
                         child: const Text(
                           "Entrar",
-                          style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
