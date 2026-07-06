@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // IMPORT NECESSÁRIO PARA O LATLNG
 import '../widgets/map_view.dart';
 import '../widgets/custom_drawer.dart';
 import 'package:tcc_alagouai/features/routes/services/route_service.dart';
@@ -35,8 +36,26 @@ class _HomeScreenState extends State<HomeScreen> {
             child: MapView(
               activeRoute: _currentRoute,
               isNavigating: _isNavigating, //passa o estado pro mapa
-              onRouteFinished: () { //gatinho para finalizar rota
+              onRouteFinished: () { //gatilho para finalizar rota
                 _clearRoute();
+              },
+              //click longo para calculo de rotas
+              onMapLongPress: (LatLng coordenadasClicadas) async {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Calculando rota segura..."), duration: Duration(seconds: 1)),
+                );
+
+                final result = await RouteService().calculateRouteFromMapClick(coordenadasClicadas);
+
+                if (result != null && result.points.isNotEmpty) {
+                  setState(() {
+                    _currentRoute = result;
+                  });
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Não foi possível encontrar uma rota para este local.")),
+                  );
+                }
               },
             ),
           ),

@@ -17,8 +17,13 @@ class MapView extends StatefulWidget {
   final SafeRouteResult? activeRoute;
   final bool isNavigating;
   final VoidCallback? onRouteFinished;
+  final Function(LatLng)? onMapLongPress;
 
-  const MapView({super.key, this.activeRoute, this.isNavigating = false, this.onRouteFinished});
+  const MapView({super.key,
+    this.activeRoute,
+    this.isNavigating = false,
+    this.onRouteFinished,
+    this.onMapLongPress,});
 
   @override
   State<MapView> createState() => _MapViewState();
@@ -33,7 +38,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   Position? _currentPosition;
 
   final RouteSimulator _simulator = RouteSimulator();
-  final bool _isSimulating = false;
+  final bool _isSimulating = true;
 
   double _lastValidHeading = 0.0;
   bool _isFinishingRoute = false;
@@ -353,6 +358,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
               buildingsEnabled: false,
               markers: markers,
               circles: circles,
+              onLongPress: widget.isNavigating ? null : widget.onMapLongPress,
               polylines: {
                 if (widget.activeRoute != null && widget.activeRoute!.points.isNotEmpty)
                   Polyline(

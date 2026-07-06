@@ -108,8 +108,12 @@ class _RouteHeaderState extends State<RouteHeader> {
     if (_currentPositionForBias != null) {
       double lat = _currentPositionForBias!.latitude;
       double lng = _currentPositionForBias!.longitude;
-      url += '&location=$lat,$lng&radius=20000';
+      url += '&location=$lat,$lng&radius=20000&strictbounds';
     }
+
+    //uso para testes
+    debugPrint("URL ENVIADA PARA O GOOGLE");
+    debugPrint(url);
 
     try {
       var response = await http.get(Uri.parse(url));

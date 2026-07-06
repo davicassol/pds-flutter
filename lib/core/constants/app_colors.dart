@@ -41,6 +41,10 @@ class AppColors {
   static const Color warningBackground = Color(0xFFFFF3E0);
   static const Color warningText = Color(0xFFEF6C00);
 
+  //cores feedback
+  static const Color buttonFeedbackActive = Color(0xFF3B82F6); // Azul (Ainda está / Água)
+  static const Color buttonFeedbackResolved = Color(0xFF10B981); // Verde (Já secou / Caminho Livre)
+
   // Nome do app
   static const String appName = "FloodWatch";
 }

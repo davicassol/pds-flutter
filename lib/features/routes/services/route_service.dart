@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:tcc_alagouai/features/report/services/report_service.dart';
 
 class SafeRouteResult {
   final List<LatLng> points;
@@ -28,6 +29,32 @@ class SafeRouteResult {
 
 class RouteService {
   final String apiKey = dotenv.env['MAPS_API_KEY'] ?? "";
+
+  //calcula rota com o longclicker
+  Future<SafeRouteResult?> calculateRouteFromMapClick(LatLng destination) async {
+    try {
+      //mesma lógica pela searchbar
+      Position currentPos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      LatLng originLatLng = LatLng(currentPos.latitude, currentPos.longitude);
+
+      final floodSnapshot = await ReportService().getActiveReports().first;
+      List<Map<String, dynamic>> activeFloods = [];
+
+      for (var doc in floodSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['lat'] != null && data['lng'] != null) {
+          activeFloods.add(data);
+        }
+      }
+
+      //usa a função principal de rotas para calcular o caminho
+      return await getRoute(originLatLng, destination, activeFloods);
+
+    } catch (e) {
+      print("Erro ao calcular rota pelo clique no mapa: $e");
+      return null;
+    }
+  }
 
   bool _isPointInFlood(LatLng routePoint, double floodLat, double floodLng, double toleranceMeters) {
     double distance = Geolocator.distanceBetween(

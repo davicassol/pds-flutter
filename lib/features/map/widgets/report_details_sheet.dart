@@ -125,43 +125,53 @@ class ReportDetailsSheet extends StatelessWidget {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Como está o local agora?", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkNavy)),
+                      const Text("O local ainda está alagado?", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkNavy)),
                       const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.successMain,
+                                backgroundColor: AppColors.buttonFeedbackActive,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 elevation: 0,
                               ),
                               onPressed: isSubmitting ? null : () async {
                                 setModalState(() => isSubmitting = true);
-                                await ReportService().submitFeedback(reportId: reportId, aindaAlagado: true);
+
+                                String? erro = await ReportService().submitFeedback(reportId: reportId, aindaAlagado: true);
+
                                 if (context.mounted) {
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Obrigado por ajudar a comunidade!"), backgroundColor: AppColors.primaryBlue));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(erro ?? "Obrigado por ajudar a comunidade!"),
+                                        backgroundColor: erro != null ? Colors.redAccent : AppColors.primaryBlue,
+                                        duration: const Duration(seconds: 3),
+                                      )
+                                  );
                                 }
                               },
                               icon: isSubmitting
                                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                  : const Icon(Icons.thumb_up_alt_rounded, color: AppColors.textWhite, size: 20),
-                              label: const Text("Ainda está", style: TextStyle(color: AppColors.textWhite, fontWeight: FontWeight.bold)),
+                                  : const Icon(Icons.water_drop_rounded, color: AppColors.textWhite, size: 20),
+                              label: const Text("Sim, ainda está", style: TextStyle(color: AppColors.textWhite, fontWeight: FontWeight.bold)),
                             ),
                           ),
                           const SizedBox(width: 12),
+
                           Expanded(
                             child: ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.alertMedium,
+                                backgroundColor: AppColors.buttonFeedbackResolved,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 elevation: 0,
                               ),
                               onPressed: isSubmitting ? null : () async {
                                 setModalState(() => isSubmitting = true);
+
                                 String? erro = await ReportService().submitFeedback(reportId: reportId, aindaAlagado: false);
 
                                 if (context.mounted) {
@@ -177,8 +187,8 @@ class ReportDetailsSheet extends StatelessWidget {
                               },
                               icon: isSubmitting
                                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                  : const Icon(Icons.thumb_down_alt_rounded, color: AppColors.textWhite, size: 20),
-                              label: const Text("Já secou", style: TextStyle(color: AppColors.textWhite, fontWeight: FontWeight.bold)),
+                                  : const Icon(Icons.check_circle_outline_rounded, color: AppColors.textWhite, size: 20),
+                              label: const Text("Não, já secou", style: TextStyle(color: AppColors.textWhite, fontWeight: FontWeight.bold)),
                             ),
                           ),
                         ],

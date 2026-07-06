@@ -61,17 +61,17 @@ class _FeedbackPopupState extends State<FeedbackPopup> with SingleTickerProvider
 
     _progressController.stop(); //para o tempo enquanto envia
 
-    await ReportService().submitFeedback(
+    String? erro = await ReportService().submitFeedback(
       reportId: widget.reportId,
       aindaAlagado: aindaAlagado,
     );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Obrigado por ajudar a comunidade!"),
-          backgroundColor: AppColors.primaryBlue,
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(erro ?? "Obrigado por ajudar a comunidade!"),
+          backgroundColor: erro != null ? Colors.redAccent : AppColors.primaryBlue,
+          duration: const Duration(seconds: 3),
         ),
       );
       widget.onDismissed();
@@ -114,7 +114,7 @@ class _FeedbackPopupState extends State<FeedbackPopup> with SingleTickerProvider
                   const Icon(Icons.help_outline_rounded, color: AppColors.primaryBlue, size: 32),
                   const SizedBox(height: 12),
                   Text(
-                    "O alagamento na ${widget.streetName} ainda está lá?",
+                    "A ${widget.streetName} ainda está alagado?",
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 16,
@@ -127,11 +127,10 @@ class _FeedbackPopupState extends State<FeedbackPopup> with SingleTickerProvider
                   //botões de Voto
                   Row(
                     children: [
-                      //sim
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.successMain,
+                            backgroundColor: AppColors.buttonFeedbackActive,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -139,20 +138,20 @@ class _FeedbackPopupState extends State<FeedbackPopup> with SingleTickerProvider
                             elevation: 0,
                           ),
                           onPressed: _isSubmitting ? null : () => _handleVote(true),
-                          icon: const Icon(Icons.thumb_up_alt_rounded, color: AppColors.textWhite, size: 20),
+                          icon: _isSubmitting
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.water_drop_rounded, color: AppColors.textWhite, size: 20),
                           label: const Text(
-                            "Ainda está",
+                            "Sim, ainda está",
                             style: TextStyle(color: AppColors.textWhite, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
-
-                      //não
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.alertMedium,
+                            backgroundColor: AppColors.buttonFeedbackResolved,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -160,9 +159,11 @@ class _FeedbackPopupState extends State<FeedbackPopup> with SingleTickerProvider
                             elevation: 0,
                           ),
                           onPressed: _isSubmitting ? null : () => _handleVote(false),
-                          icon: const Icon(Icons.thumb_down_alt_rounded, color: AppColors.textWhite, size: 20),
+                          icon: _isSubmitting
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.check_circle_outline_rounded, color: AppColors.textWhite, size: 20),
                           label: const Text(
-                            "Já secou",
+                            "Não, já secou",
                             style: TextStyle(color: AppColors.textWhite, fontWeight: FontWeight.bold),
                           ),
                         ),
