@@ -27,7 +27,6 @@ class DangerZonesCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("Zonas de Maior Risco", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textWhite)),
-              Icon(Icons.more_horiz, color: AppColors.textWhite.withOpacity(0.5)),
             ],
           ),
           const SizedBox(height: 24),

@@ -25,14 +25,14 @@ class AppColors {
   static const Color shadowColor = Colors.black12;        // Sombras suaves
   static const Color transparent = Colors.transparent;
 
-  // Escala de Cinzas (Divisórias, Ícones, Textos Secundários)
+  //escala de Cinzas (Divisórias, Ícones, Textos Secundários)
   static const Color textGreyLight = Color(0xFFBDBDBD);
   static const Color textGreyMedium = Color(0xFF757575);
   static const Color iconGrey = Colors.grey;
   static const Color dividerGrey = Color(0xFFE0E0E0);
   static const Color surfaceGrey = Color(0xFFF5F5F5);
 
-  // Cores de Status (Cards de Rota)
+  //cores de Status (Cards de Rota)
   static const Color successMain = Colors.green;
   static const Color successBackground = Color(0xFFE8F5E9);
   static const Color successText = Color(0xFF388E3C);
@@ -44,6 +44,11 @@ class AppColors {
   //cores feedback
   static const Color buttonFeedbackActive = Color(0xFF3B82F6); // Azul (Ainda está / Água)
   static const Color buttonFeedbackResolved = Color(0xFF10B981); // Verde (Já secou / Caminho Livre)
+
+  //cores popup notificações
+  static const Color notificationBackground = Color(0xFFFFFFFF); // Fundo branco
+  static const Color notificationTitle = Color(0xFF1E293B); // Azul escuro
+  static const Color notificationSubtitle = Color(0xFF64748B); // Cinza para o endereço
 
   // Nome do app
   static const String appName = "FloodWatch";
