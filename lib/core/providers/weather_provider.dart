@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tcc_alagouai/core/services/open_meteo_service.dart';
 
 class WeatherProvider with ChangeNotifier {
@@ -12,7 +13,7 @@ class WeatherProvider with ChangeNotifier {
   List<double> weeklyRainfall = [];
   List<int> dailyReportCounts = List.filled(8, 0);
   List<Map<String, dynamic>> topDangerZones = [];
-
+  bool showRainStats = true;
   String lastUpdateTime = "--:--";
   String currentLocationName = "Buscando localização...";
   String currentCity = "";
@@ -21,6 +22,24 @@ class WeatherProvider with ChangeNotifier {
 
   bool isLoading = false;
   String? errorMessage;
+
+  WeatherProvider() {
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    showRainStats = prefs.getBool('rainForecast') ?? false;
+    notifyListeners();
+  }
+
+  //função do botão das preferencias
+  Future<void> toggleRainStats(bool value) async {
+    showRainStats = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('rainForecast', value);
+    notifyListeners(); //avisa tela para att
+  }
 
   Future<void> fetchWeather(double lat, double lng) async {
     isLoading = true;
@@ -36,7 +55,7 @@ class WeatherProvider with ChangeNotifier {
         currentLocationName = "$subLocality$currentCity";
       }
 
-      // Busca os dados de chuva e temperatura na Open-Meteo
+      //busca os dados de chuva e temperatura na Open-Meteo
       final data = await _meteoService.getWeatherData(lat, lng);
       if (data != null) {
         currentTemp = data['current']['temperature_2m'];

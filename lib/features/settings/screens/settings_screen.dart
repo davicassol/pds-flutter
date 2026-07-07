@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:tcc_alagouai/core/providers/weather_provider.dart';
 import 'package:tcc_alagouai/core/constants/app_colors.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_toggle.dart';
@@ -13,7 +15,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool notifications = true;
-  bool rainForecast = false;
   // bool autoLocation = true; //variável desativada temporariamente
 
   @override
@@ -26,7 +27,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       notifications = prefs.getBool('notifications') ?? true;
-      rainForecast = prefs.getBool('rainForecast') ?? false;
       // autoLocation = prefs.getBool('autoLocation') ?? true;
     });
   }
@@ -38,6 +38,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final weatherProvider = context.watch<WeatherProvider>();
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -104,10 +106,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SettingsToggle(
                     title: "Mostrar Estatísticas de Chuva",
                     subtitle: "Exibir dados meteorológicos de chuva no status",
-                    value: rainForecast,
+                    value: weatherProvider.showRainStats,
                     onChanged: (value) {
-                      setState(() => rainForecast = value);
-                      _saveSetting('rainForecast', value);
+                      context.read<WeatherProvider>().toggleRainStats(value);
                     },
                   ),
                 ],

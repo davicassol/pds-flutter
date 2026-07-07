@@ -190,10 +190,12 @@ class _RainStatisticsScreenState extends State<RainStatisticsScreen> with Widget
                       style: TextStyle(color: accentColor, fontSize: 24, fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      "Previsão: ${rainToday.toStringAsFixed(1)}mm hoje.",
-                      style: TextStyle(color: AppColors.textWhite.withOpacity(0.9), fontSize: 14),
-                    ),
+                    //ativo mostra chuva, se não esconde os dados
+                    if (provider.showRainStats)
+                      Text(
+                        "Previsão: ${rainToday.toStringAsFixed(1)}mm hoje.",
+                        style: TextStyle(color: AppColors.textWhite.withOpacity(0.9), fontSize: 14),
+                      ),
                   ],
                 ),
               ],
