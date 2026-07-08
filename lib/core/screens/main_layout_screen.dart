@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 import '../../features/map/screens/home_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
-import '../../features/routes/screens/route_screen.dart';
 import '../../features/statistics/screens/rain_statistics_screen.dart';
 
 class MainLayoutScreen extends StatefulWidget {
@@ -25,14 +25,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         children: [
           const HomeScreen(),
           NotificationsScreen(key: _notificationsKey),
-          const RouteScreen(),
           const RainStatisticsScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: AppColors.primaryBlue,
+        unselectedItemColor: AppColors.iconGrey,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() {
@@ -44,9 +43,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           });
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Início"),
+          BottomNavigationBarItem(icon: Icon(Icons.map_rounded), label: "Mapa"),
           BottomNavigationBarItem(icon: Icon(Icons.notifications), label: "Alertas"),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Rotas"),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: "Dados"),
         ],
       ),

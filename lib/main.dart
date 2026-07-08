@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:tcc_alagouai/features/auth/screens/verify_email_screen.dart';
 import 'core/screens/main_layout_screen.dart';
 import 'firebase_options.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'package:tcc_alagouai/features/auth/screens/forgot_password_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
+import 'features/auth/screens/verify_email_screen.dart';
 import 'features/map/screens/home_screen.dart';
 import 'features/report/screens/report_screen.dart';
 import 'features/notifications/screens/notifications_screen.dart';
-import 'features/routes/screens/route_screen.dart';
 import 'features/statistics/screens/rain_statistics_screen.dart';
-import 'features/prediction/screens/flood_risk_screen.dart';
 import 'features/profile/screens/user_profile_screen.dart';
 import 'features/settings/screens/settings_screen.dart';
 import 'features/about/screens/about_screen.dart';
@@ -62,13 +63,13 @@ class MyApp extends StatelessWidget {
       routes: {
         "/": (context) => const SplashScreen(),
         "/login": (context) => const LoginScreen(),
+        "/forgot-password": (context) => const ForgotPasswordScreen(),
         "/signup": (context) => const SignUpScreen(),
+        "/verify-email": (context) => const VerifyEmailScreen(),
         "/home": (context) => const MainLayoutScreen(),
         "/report": (context) => const ReportScreen(),
         "/notifications": (context) => const NotificationsScreen(),
-        "/route": (context) => const RouteScreen(),
         "/statistics": (context) => const RainStatisticsScreen(),
-        "/prediction": (context) => const FloodRiskScreen(),
         "/profile": (context) => const UserProfileScreen(),
         "/settings": (context) => const SettingsScreen(),
         "/about": (context) => const AboutScreen(),

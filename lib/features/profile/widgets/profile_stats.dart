@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tcc_alagouai/core/constants/app_colors.dart';
 import '../../report/screens/my_reports_screen.dart';
 import '../../report/services/report_service.dart';
+import 'package:tcc_alagouai/features/route_history/screens/route_history_screen.dart';
+import 'package:tcc_alagouai/features/route_history/services/route_history_service.dart';
 
 class ProfileStats extends StatelessWidget {
   const ProfileStats({super.key});
@@ -11,6 +13,7 @@ class ProfileStats extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
+        //reportes
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: ReportService().getUserReports(),
@@ -45,18 +48,45 @@ class ProfileStats extends StatelessWidget {
 
         const SizedBox(width: 16),
 
+        //histórico de rotas
         Expanded(
-          child: _Item(
-            value: "0",
-            label: "Rotas",
-            icon: Icons.alt_route_rounded,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text("O histórico de rotas estará disponível em breve!", style: TextStyle(fontWeight: FontWeight.bold)),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+          child: StreamBuilder<List<Map<String, dynamic>>>(
+            stream: RouteHistoryService().getUserRouteHistory(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return _Item(
+                  value: "-",
+                  label: "Rotas",
+                  icon: Icons.alt_route_rounded,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const RouteHistoryScreen()));
+                  },
+                );
+              }
+
+              if (snapshot.hasError) {
+                return _Item(
+                  value: "!",
+                  label: "Rotas",
+                  icon: Icons.alt_route_rounded,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const RouteHistoryScreen()));
+                  },
+                );
+              }
+
+              String routeCount = "0";
+              if (snapshot.hasData) {
+                routeCount = snapshot.data!.length.toString();
+              }
+
+              return _Item(
+                value: routeCount,
+                label: "Rotas",
+                icon: Icons.alt_route_rounded,
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const RouteHistoryScreen()));
+                },
               );
             },
           ),

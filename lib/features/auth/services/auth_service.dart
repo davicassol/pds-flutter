@@ -11,30 +11,32 @@ class AuthService {
     required String password,
   }) async {
     try {
-      // Cria a conta de acesso no Firebase Authentication
+      //cria a conta de no Firebase Authentication
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
       await userCredential.user!.updateDisplayName(name);
 
+      //dispara o e-mail de verificação
+      await userCredential.user!.sendEmailVerification();
+
       String uid = userCredential.user!.uid;
 
-      // Salva o perfil do usuário no Firestore
+      //salva o perfil do usuário no Firestore
       await _firestore.collection('usuarios').doc(uid).set({
         'uid': uid,
         'nome': name,
         'email': email,
-        'telefone': '', // Será preenchido na verificação 2FA (Auditoria)
-        'fcm_token': '', // Será preenchido para receber notificações de enchentes
-        'is_verified': false, // Começa como falso, garantindo que não pode postar fake news
+        'telefone': '', //mantido no banco para uso futuro
+        'fcm_token': '', //será preenchido futuramente para receber notificações de enchentes
+        'is_verified': false, //vira true ao confrimar email
         'data_cadastro': FieldValue.serverTimestamp(),
       });
 
       return null;
 
     } on FirebaseAuthException catch (e) {
-      // Tradução dos erros mais comuns para o usuário
       if (e.code == 'email-already-in-use') {
         return "Este e-mail já está cadastrado.";
       } else if (e.code == 'weak-password') {
@@ -53,10 +55,21 @@ class AuthService {
     required String password,
   }) async {
     try {
-      await _auth.signInWithEmailAndPassword(
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      //verifica se o e-mail foi confirmado
+      if (!userCredential.user!.emailVerified) {
+        await _auth.signOut(); //desloga o usuário imediatamente
+        return "Verifique sua caixa de entrada e confirme seu e-mail antes de acessar.";
+      }
+
+      //passou da verificação, atualiza o status de auditoria no Firestore
+      await _firestore.collection('usuarios').doc(userCredential.user!.uid).update({
+        'is_verified': true,
+      });
 
       return null;
 
@@ -65,6 +78,20 @@ class AuthService {
         return "E-mail ou senha incorretos.";
       }
       return "Erro ao fazer login: ${e.message}";
+    } catch (e) {
+      return "Ocorreu um erro inesperado.";
+    }
+  }
+
+  Future<String?> resetPassword({required String email}) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'invalid-email') {
+        return "E-mail inválido ou não cadastrado.";
+      }
+      return "Erro ao enviar o link de recuperação: ${e.message}";
     } catch (e) {
       return "Ocorreu um erro inesperado.";
     }

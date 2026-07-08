@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String text;
@@ -17,13 +18,16 @@ class PrimaryButton extends StatelessWidget {
       height: 48,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
+          backgroundColor: AppColors.primaryBlue,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
         onPressed: onPressed,
-        child: Text(text),
+        child: Text(
+          text,
+          style: const TextStyle(color: AppColors.textWhite, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }

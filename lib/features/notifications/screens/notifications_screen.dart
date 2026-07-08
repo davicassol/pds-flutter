@@ -15,7 +15,8 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+// ADICIONADO: 'with WidgetsBindingObserver'
+class _NotificationsScreenState extends State<NotificationsScreen> with WidgetsBindingObserver {
   Position? _currentPosition;
   bool _isLoadingLocation = true;
   bool _isLoadingPrefs = true;
@@ -25,16 +26,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadSettingsAndLocation();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _positionStream?.cancel();
     super.dispose();
   }
 
-  Future<void> _loadSettingsAndLocation() async {
+  //percebe quando o user volta das config de SO
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadSettingsAndLocation(isBackgroundResume: true);
+    }
+  }
+
+  Future<void> _loadSettingsAndLocation({bool isBackgroundResume = false}) async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
@@ -43,22 +54,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       });
     }
     if (_showAlerts) {
-      _startLocationTracking();
+      _startLocationTracking(isBackgroundResume: isBackgroundResume);
     }
   }
 
-  Future<void> _startLocationTracking() async {
+  Future<void> _startLocationTracking({bool isBackgroundResume = false}) async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) throw Exception('GPS desativado');
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
+        if (isBackgroundResume) throw Exception('Permissão negada');
+
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) throw Exception('Permissão negada');
       }
 
-      //pega a localização atual na hora
       Position initialPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -70,12 +82,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         });
       }
 
-      //deixa o stream ativo para atualizar caso o usuário mude de lugar
       LocationSettings locationSettings = const LocationSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 100,
       );
 
+      _positionStream?.cancel();
       _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings)
           .listen((Position position) {
         if (mounted) {
@@ -91,7 +103,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           _isLoadingLocation = false;
         });
       }
-      debugPrint("Erro ao ligar o radar de localização: $e");
     }
   }
 

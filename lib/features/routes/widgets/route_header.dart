@@ -7,9 +7,11 @@ import 'package:geocoding/geocoding.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:tcc_alagouai/features/report/services/report_service.dart';
 import 'package:tcc_alagouai/features/routes/services/route_service.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class RouteHeader extends StatefulWidget {
   final Function(SafeRouteResult) onRouteCalculated;
@@ -32,7 +34,6 @@ class _RouteHeaderState extends State<RouteHeader> {
   List<dynamic> _placeList = [];
   Timer? _debounce;
 
-  //variável para guardar o GPS e usar como viés na pesquisa
   LatLng? _currentPositionForBias;
 
   @override
@@ -44,39 +45,45 @@ class _RouteHeaderState extends State<RouteHeader> {
   Future<void> _getUserLocationForBias() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _setFallbackBias();
-        return;
-      }
+      if (!serviceEnabled) return;
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          _setFallbackBias();
+        if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
           return;
+        }
+      } else if (permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      //tenta pegar do cache
+      Position? cachedPosition = await Geolocator.getLastKnownPosition();
+
+      if (cachedPosition != null && mounted) {
+        setState(() {
+          _currentPositionForBias = LatLng(cachedPosition.latitude, cachedPosition.longitude);
+        });
+      } else {
+        //se o cache estiver vazio injeta temporariamente localização mockada
+        if (mounted) {
+          setState(() {
+            _currentPositionForBias = const LatLng(-29.3385, -49.7291);
+          });
         }
       }
 
-      Position? cachedPosition = await Geolocator.getLastKnownPosition();
-      Position finalPosition = cachedPosition ?? await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+      //busca a posição real em segundo plano para confirmar/corrigir a temporária
+      Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low).then((finalPosition) {
+        if (mounted) {
+          setState(() {
+            _currentPositionForBias = LatLng(finalPosition.latitude, finalPosition.longitude);
+          });
+        }
+      });
 
-      if (mounted) {
-        setState(() {
-          _currentPositionForBias = LatLng(finalPosition.latitude, finalPosition.longitude);
-        });
-      }
     } catch (e) {
       debugPrint("Erro ao obter GPS para o viés: $e");
-      _setFallbackBias();
-    }
-  }
-
-  void _setFallbackBias() {
-    if (mounted) {
-      setState(() {
-        _currentPositionForBias = const LatLng(-29.3385, -49.7291); // Coordenadas de Torres RS
-      });
     }
   }
 
@@ -96,11 +103,17 @@ class _RouteHeaderState extends State<RouteHeader> {
     if (apiKey.isEmpty) return;
 
     String url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$apiKey&language=pt-BR&components=country:br';
+
+    //se achou no cache ou no GPS real, envia a busca para a região
     if (_currentPositionForBias != null) {
       double lat = _currentPositionForBias!.latitude;
       double lng = _currentPositionForBias!.longitude;
-      url += '&location=$lat,$lng&radius=20000';
+      url += '&location=$lat,$lng&radius=20000&strictbounds';
     }
+
+    //uso para testes
+    debugPrint("URL ENVIADA PARA O GOOGLE");
+    debugPrint(url);
 
     try {
       var response = await http.get(Uri.parse(url));
@@ -213,106 +226,160 @@ class _RouteHeaderState extends State<RouteHeader> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(24),
-            bottomRight: Radius.circular(24),
-          )
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Para onde vamos?",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
+    //Pega a foto do user logado
+    final User? user = FirebaseAuth.instance.currentUser;
+    final String? photoUrl = user?.photoURL;
 
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: destinationController,
-                      onChanged: _onSearchChanged,
-                      decoration: InputDecoration(
-                        hintText: "Buscar destino",
-                        prefixIcon: const Icon(Icons.search, color: Colors.blue),
-                        suffixIcon: destinationController.text.isNotEmpty
-                            ? IconButton(
-                          icon: const Icon(Icons.clear, color: Colors.grey),
-                          onPressed: () {
-                            destinationController.clear();
-                            setState(() { _placeList = []; });
-                          },
-                        )
-                            : null,
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none
-                        ),
-                      ),
-                      onSubmitted: (_) => _handleCalculateRoute(),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min, //Impede que o header tome a tela toda
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          //searchbar
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceWhite,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: const [
+                BoxShadow(
+                    color: AppColors.shadowColor,
+                    blurRadius: 10,
+                    offset: Offset(0, 4)
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 8),
+
+                //foto de user/botão
+                GestureDetector(
+                  onTap: () {
+                    //Abre o CustomDrawer
+                    Scaffold.of(context).openDrawer();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3), width: 2),
+                    ),
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.primaryBlue.withOpacity(0.1),
+                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                      child: photoUrl == null
+                          ? const Icon(Icons.person, size: 24, color: AppColors.primaryBlue)
+                          : null,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                ),
 
-                  GestureDetector(
-                    onTap: _isLoading ? null : _handleCalculateRoute,
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Icon(Icons.directions, color: Colors.white),
+                const SizedBox(width: 12),
+
+                //campo de digitação
+                Expanded(
+                  child: TextField(
+                    controller: destinationController,
+                    onChanged: _onSearchChanged,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => _handleCalculateRoute(),
+                    decoration: InputDecoration(
+                      hintText: "Para onde vamos?",
+                      hintStyle: const TextStyle(color: AppColors.textGreyLight, fontSize: 16),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                  )
-                ],
-              ),
-
-              if (_placeList.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  constraints: const BoxConstraints(maxHeight: 220),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
                   ),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _placeList.length,
-                    itemBuilder: (context, index) {
-                      var place = _placeList[index];
-                      String mainText = place['structured_formatting']?['main_text'] ?? place['description'];
-                      String secondaryText = place['structured_formatting']?['secondary_text'] ?? "";
+                ),
 
-                      return ListTile(
-                        leading: const Icon(Icons.location_on, color: Colors.grey),
-                        title: Text(mainText, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: secondaryText.isNotEmpty ? Text(secondaryText) : null,
-                        onTap: () {
-                          _onPlaceSelected(place['description']);
-                        },
-                      );
+                //Botão Limpar (X)
+                if (destinationController.text.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: AppColors.iconGrey, size: 20),
+                    onPressed: () {
+                      destinationController.clear();
+                      setState(() { _placeList = []; });
                     },
                   ),
-                )
-            ],
+
+                Container(
+                  height: 24,
+                  width: 1,
+                  color: AppColors.dividerGrey,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                ),
+
+                //botão de calcular rota
+                GestureDetector(
+                  onTap: _isLoading ? null : _handleCalculateRoute,
+                  child: Container(
+                    margin: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlue,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: AppColors.textWhite, strokeWidth: 2)
+                    )
+                        : const Icon(Icons.directions_rounded, color: AppColors.textWhite, size: 20),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+
+          //sugestões suspensas
+          if (_placeList.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              constraints: const BoxConstraints(maxHeight: 250),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceWhite,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(color: AppColors.shadowColor, blurRadius: 10, offset: Offset(0, 4))
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: _placeList.length,
+                  separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.dividerGrey),
+                  itemBuilder: (context, index) {
+                    var place = _placeList[index];
+                    String mainText = place['structured_formatting']?['main_text'] ?? place['description'];
+                    String secondaryText = place['structured_formatting']?['secondary_text'] ?? "";
+
+                    return ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: AppColors.surfaceGrey,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.location_on_rounded, color: AppColors.iconGrey, size: 20),
+                      ),
+                      title: Text(mainText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      subtitle: secondaryText.isNotEmpty
+                          ? Text(secondaryText, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textGreyMedium, fontSize: 13))
+                          : null,
+                      onTap: () {
+                        _onPlaceSelected(place['description']);
+                      },
+                    );
+                  },
+                ),
+              ),
+            )
+        ],
       ),
     );
   }

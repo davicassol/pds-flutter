@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tcc_alagouai/core/providers/weather_provider.dart';
+import 'package:tcc_alagouai/core/constants/app_colors.dart';
 
 class RainfallLineChart extends StatelessWidget {
   const RainfallLineChart({super.key});
@@ -9,7 +10,6 @@ class RainfallLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final weather = context.watch<WeatherProvider>();
-    //converte os dados da API para pontos do gráfico
     List<FlSpot> spots = [];
     for (int i = 0; i < weather.weeklyRainfall.length; i++) {
       spots.add(FlSpot(i.toDouble(), weather.weeklyRainfall[i]));
@@ -21,27 +21,33 @@ class RainfallLineChart extends StatelessWidget {
       decoration: _cardDecoration(),
       child: Column(
         children: [
-          const Text("Volume Diário (mm)", style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text("Volume Diário (mm)", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkNavy)),
           const SizedBox(height: 20),
           Expanded(
             child: LineChart(
               LineChartData(
-                gridData: FlGridData(show: true, drawVerticalLine: false,
-                    getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey[200], strokeWidth: 1)),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) => const FlLine(color: AppColors.dividerGrey, strokeWidth: 1),
+                ),
                 titlesData: _buildTitles(),
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
                   LineChartBarData(
                     spots: spots.isEmpty ? [const FlSpot(0, 0)] : spots,
                     isCurved: true,
-                    gradient: const LinearGradient(colors: [Colors.blue, Colors.lightBlueAccent]),
+                    gradient: const LinearGradient(colors: [AppColors.primaryDark, AppColors.primaryBlue]),
                     barWidth: 4,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: true),
                     belowBarData: BarAreaData(
                       show: true,
-                      gradient: LinearGradient(colors: [Colors.blue.withOpacity(0.3), Colors.transparent],
-                          begin: Alignment.topCenter, end: Alignment.bottomCenter),
+                      gradient: LinearGradient(
+                          colors: [AppColors.primaryBlue.withOpacity(0.3), AppColors.transparent],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter
+                      ),
                     ),
                   ),
                 ],
@@ -63,7 +69,7 @@ class RainfallLineChart extends StatelessWidget {
           getTitlesWidget: (value, meta) {
             const days = ['7d', '6d', '5d', '4d', '3d', '2d', 'Ontem', 'Hoje'];
             if (value.toInt() >= 0 && value.toInt() < days.length) {
-              return Text(days[value.toInt()], style: const TextStyle(fontSize: 10, color: Colors.grey));
+              return Text(days[value.toInt()], style: const TextStyle(fontSize: 10, color: AppColors.textGreyMedium));
             }
             return const Text('');
           },
@@ -75,10 +81,10 @@ class RainfallLineChart extends StatelessWidget {
 
 BoxDecoration _cardDecoration() {
   return BoxDecoration(
-    color: Colors.white,
+    color: AppColors.surfaceWhite,
     borderRadius: BorderRadius.circular(20),
-    boxShadow: [
-      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8)),
+    boxShadow: const [
+      BoxShadow(color: AppColors.shadowColor, blurRadius: 15, offset: Offset(0, 8)),
     ],
   );
 }

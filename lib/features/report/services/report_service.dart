@@ -46,7 +46,7 @@ class ReportService {
         print("Erro ao verificar status de administrador: $e");
       }
 
-      //aplica as regras se não for adm (regra de 3 reportes por dia)
+      //aplica as regras se não for adm (regra de 5 reportes por dia)
       if (!isAdmin) {
         DateTime now = DateTime.now();
         DateTime startOfToday = DateTime(now.year, now.month, now.day);
@@ -57,11 +57,11 @@ class ReportService {
             .where('timestamp', isGreaterThanOrEqualTo: startOfToday)
             .get();
 
-        if (todayReports.docs.length >= 3) {
-          return "Você atingiu o limite máximo de 3 reportes para o dia de hoje.";
+        if (todayReports.docs.length >= 100) {
+          return "Você atingiu o limite máximo de 5 reportes para o dia de hoje.";
         }
 
-        //regra de distância máxima de 100 metros
+        //regra de distância máxima de 200 metros
         Position currentPosition = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
@@ -71,8 +71,8 @@ class ReportService {
           selectedLat, selectedLng,
         );
 
-        if (distanceInMeters > 100) {
-          return "Você está muito longe do local! Só é permitido reportar alagamentos num raio de 100 metros.";
+        if (distanceInMeters > 1000) {
+          return "Você está muito longe do local! Só é permitido reportar alagamentos num raio de 200 metros.";
         }
       }
 
@@ -95,7 +95,11 @@ class ReportService {
       }
       String cityName = rawCityName.toLowerCase();
 
-      await _firestore.collection('reportes').add({
+      //calcula expiração de 1h
+      DateTime agora = DateTime.now();
+      DateTime expiracaoInicial = agora.add(const Duration(hours: 1));
+
+      DocumentReference reportRef = await _firestore.collection('reportes').add({
         'userId': currentUserId,
         'userName': _auth.currentUser?.displayName ?? "Anônimo",
         'streetName': realStreetName,
@@ -105,6 +109,18 @@ class ReportService {
         'imageUrl': imageUrl,
         'timestamp': FieldValue.serverTimestamp(),
         'city': cityName,
+        'data_expiracao': expiracaoInicial,
+        'ativo': true,
+        'votos_ativos': 0,
+        'votos_inativos': 0,
+      });
+
+      //registra o primeiro feedback sendo do criador e aplica a regra de tempo
+      await _firestore.collection('feedbacks').doc('${reportRef.id}_$currentUserId').set({
+        'alagamento_id': reportRef.id,
+        'usuario_id': currentUserId,
+        'ainda_alagado': true,
+        'data_feedback': FieldValue.serverTimestamp(),
       });
 
       return null; //retorna null se for sucesso
@@ -113,16 +129,104 @@ class ReportService {
     }
   }
 
-  //busca todos os reportes ativos no mapa (última 1 hora)
+  //voto comunidade
+  Future<String?> submitFeedback({
+    required String reportId,
+    required bool aindaAlagado,
+  }) async {
+    String? currentUserId = _auth.currentUser?.uid;
+    if (currentUserId == null) return "Usuário não autenticado.";
+
+    DocumentReference reportRef = _firestore.collection('reportes').doc(reportId);
+    DocumentReference feedbackRef = _firestore.collection('feedbacks').doc('${reportId}_$currentUserId');
+
+    try {
+      return await _firestore.runTransaction((transaction) async {
+
+        //cooldown
+        DocumentSnapshot feedbackSnapshot = await transaction.get(feedbackRef);
+        if (feedbackSnapshot.exists) {
+          Map<String, dynamic> feedbackData = feedbackSnapshot.data() as Map<String, dynamic>;
+          Timestamp? ultimoFeedback = feedbackData['data_feedback'] as Timestamp?;
+
+          if (ultimoFeedback != null) {
+            DateTime dataPermitida = ultimoFeedback.toDate().add(const Duration(minutes: 20));
+            DateTime agora = DateTime.now();
+
+            //se o tempo atual for antes do tempo permitido, bloqueia o voto
+            if (agora.isBefore(dataPermitida)) {
+              int minutosRestantes = dataPermitida.difference(agora).inMinutes;
+              if (minutosRestantes <= 0) minutosRestantes = 1;
+
+              return "Você já votou aqui. Aguarde mais $minutosRestantes min para atualizar o status.";
+            }
+          }
+        }
+
+        DocumentSnapshot reportSnapshot = await transaction.get(reportRef);
+        if (!reportSnapshot.exists) return "Este reporte não existe mais.";
+
+        Map<String, dynamic> data = reportSnapshot.data() as Map<String, dynamic>;
+        if (data['ativo'] == false) return "Este alagamento já foi resolvido.";
+
+        int votosAtivos = data['votos_ativos'] ?? 0;
+        int votosInativos = data['votos_inativos'] ?? 0;
+        Timestamp dataExpiracaoAtual = data['data_expiracao'] ?? Timestamp.now();
+
+        //xomputa o voto atual
+        if (aindaAlagado) {
+          votosAtivos++;
+        } else {
+          votosInativos++;
+        }
+
+        bool novoAtivo = true;
+        Timestamp novaDataExpiracao = dataExpiracaoAtual;
+        int novosVotosAtivos = votosAtivos;
+        int novosVotosInativos = votosInativos;
+
+        //estende o alagamnento por +1h ou o encerra
+        if (votosAtivos >= 3) {
+          novaDataExpiracao = Timestamp.fromDate(dataExpiracaoAtual.toDate().add(const Duration(hours: 1)));
+          novosVotosAtivos = 0;
+          novosVotosInativos = 0;
+        } else if (votosInativos >= 3) {
+          novoAtivo = false;
+        }
+
+        //att alagamento
+        transaction.update(reportRef, {
+          'votos_ativos': novosVotosAtivos,
+          'votos_inativos': novosVotosInativos,
+          'data_expiracao': novaDataExpiracao,
+          'ativo': novoAtivo,
+        });
+
+        transaction.set(feedbackRef, {
+          'alagamento_id': reportId,
+          'usuario_id': currentUserId,
+          'ainda_alagado': aindaAlagado,
+          'data_feedback': FieldValue.serverTimestamp(),
+        });
+
+        return null;
+      });
+    } catch (e) {
+      print("Erro ao processar feedback: $e");
+      return "Erro ao processar o seu voto.";
+    }
+  }
+
+  //busca todos os reportes ativos que ainda não expiraram
   Stream<QuerySnapshot> getActiveReports() {
-    DateTime oneHourAgo = DateTime.now().subtract(const Duration(hours: 1));
     return _firestore
         .collection('reportes')
-        .where('timestamp', isGreaterThan: oneHourAgo)
+        .where('ativo', isEqualTo: true)
+        .where('data_expiracao', isGreaterThan: Timestamp.now())
         .snapshots();
   }
 
-  // busca reportes do usuário logado
+  //busca reportes do usuário logado
   Stream<QuerySnapshot> getUserReports() {
     String? currentUserId = _auth.currentUser?.uid;
     return _firestore

@@ -10,6 +10,8 @@ class CorrelationChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final weather = context.watch<WeatherProvider>();
+    final showRain = weather.showRainStats;
+
     List<FlSpot> rainSpots = List.generate(weather.weeklyRainfall.length, (i) {
       return FlSpot(i.toDouble(), weather.weeklyRainfall[i]);
     });
@@ -22,11 +24,7 @@ class CorrelationChart extends StatelessWidget {
       children: [
         const Text(
           "Correlação Diária",
-          style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 18,
-              color: AppColors.darkNavy
-          ),
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.darkNavy),
         ),
         const SizedBox(height: 20),
         SizedBox(
@@ -34,16 +32,14 @@ class CorrelationChart extends StatelessWidget {
           child: LineChart(
             LineChartData(
               minY: 0,
-
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
-                  getTooltipColor: (touchedSpot) => const Color(0xFF0F1E44),
+                  getTooltipColor: (touchedSpot) => AppColors.surfaceDark,
                   tooltipRoundedRadius: 12,
                   getTooltipItems: (List<LineBarSpot> touchedSpots) {
                     return touchedSpots.map((spot) {
-                      final isRain = spot.barIndex == 0;
+                      final isRain = showRain ? spot.barIndex == 0 : false;
 
-                      //se for chuva, exibe com 1 casa decimal
                       String textoDoBalao = isRain
                           ? spot.y.toStringAsFixed(1)
                           : (spot.y / 5).toInt().toString();
@@ -60,31 +56,27 @@ class CorrelationChart extends StatelessWidget {
                   },
                 ),
               ),
-
               gridData: const FlGridData(show: false),
               borderData: FlBorderData(show: false),
               titlesData: _buildTitles(),
               lineBarsData: [
-                //chuva
-                LineChartBarData(
-                  spots: rainSpots.isEmpty ? const [FlSpot(0, 0)] : rainSpots,
-                  isCurved: true,
-                  //evita que o gráfico fiquei negativo
-                  preventCurveOverShooting: true,
-                  color: AppColors.alertLow,
-                  barWidth: 4,
-                  isStrokeCapRound: true,
-                  dotData: const FlDotData(show: false),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    color: AppColors.alertLow.withOpacity(0.15),
+                if (showRain)
+                  LineChartBarData(
+                    spots: rainSpots.isEmpty ? const [FlSpot(0, 0)] : rainSpots,
+                    isCurved: true,
+                    preventCurveOverShooting: true,
+                    color: AppColors.alertLow,
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: AppColors.alertLow.withOpacity(0.15),
+                    ),
                   ),
-                ),
-                //alertas
                 LineChartBarData(
                   spots: alertSpots.isEmpty ? const [FlSpot(0, 0)] : alertSpots,
                   isCurved: true,
-                  //evita que o gráfico fiquei negativo
                   preventCurveOverShooting: true,
                   color: AppColors.alertHigh,
                   barWidth: 3,
