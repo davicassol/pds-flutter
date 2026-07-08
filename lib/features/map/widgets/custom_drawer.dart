@@ -87,7 +87,7 @@ class CustomDrawer extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               _buildMenuItem(context, Icons.person_outline, "Meu Perfil", '/profile'),
-              _buildMenuItem(context, Icons.settings_outlined, "Configurações", '/settings'),
+              _buildMenuItem(context, Icons.settings_outlined, "Preferências", '/settings'),
               _buildMenuItem(context, Icons.info_outline, "Sobre o App", '/about'),
 
               const Spacer(),

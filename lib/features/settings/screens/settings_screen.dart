@@ -51,7 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text("Configurações", style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.darkNavy)),
+          title: const Text("Preferências", style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.darkNavy)),
           backgroundColor: Colors.transparent,
           elevation: 0,
           centerTitle: true,

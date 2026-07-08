@@ -7,6 +7,7 @@ import 'package:tcc_alagouai/features/routes/widgets/route_header.dart';
 import 'package:tcc_alagouai/features/routes/widgets/route_info_card.dart';
 import 'package:tcc_alagouai/core/constants/app_colors.dart';
 import 'package:tcc_alagouai/features/notifications/widgets/realtime_alert_listener.dart';
+import 'package:tcc_alagouai/features/route_history/services/route_history_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,7 +16,6 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-//controle de navegação
 class _HomeScreenState extends State<HomeScreen> {
   SafeRouteResult? _currentRoute;
   bool _isNavigating = false;
@@ -25,6 +25,16 @@ class _HomeScreenState extends State<HomeScreen> {
       _currentRoute = null;
       _isNavigating = false;
     });
+  }
+
+  //manda o serviço salvar e limpa o mapa
+  Future<void> _salvarEFinalizarRota() async {
+    if (_currentRoute != null && _isNavigating) {
+      await RouteHistoryService().saveCompletedRoute(
+        route: _currentRoute!,
+      );
+    }
+    _clearRoute();
   }
 
   @override
@@ -37,11 +47,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Positioned.fill(
               child: MapView(
                 activeRoute: _currentRoute,
-                isNavigating: _isNavigating, //passa o estado pro mapa
-                onRouteFinished: () { //gatilho para finalizar rota
-                  _clearRoute();
+                isNavigating: _isNavigating,
+                onRouteFinished: () {
+                  _salvarEFinalizarRota();
                 },
-                //click longo para calculo de rotas
                 onMapLongPress: (LatLng coordenadasClicadas) async {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Calculando rota segura..."), duration: Duration(seconds: 1)),
@@ -78,7 +87,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-            //se não estiver navegando mostra o card
             if (_currentRoute != null && !_isNavigating)
               Positioned(
                 bottom: 90,
@@ -95,14 +103,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     isNavigating: _isNavigating,
                     onToggleNavigation: () {
                       setState(() {
-                        _isNavigating = true; //inicia a navegação
+                        _isNavigating = true;
                       });
                     },
                   ),
                 ),
               ),
 
-            //se estiver navegando mostra o botão de sair
             if (_isNavigating)
               Positioned(
                 bottom: 17,
@@ -121,9 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           elevation: 4,
                         ),
                         onPressed: () {
-                          setState(() {
-                            _isNavigating = false;
-                          });
+                          _salvarEFinalizarRota();
                         },
                         icon: const Icon(Icons.close_rounded, color: AppColors.textWhite),
                         label: const Text(
@@ -138,7 +143,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
 
-        //botão de reporte
         floatingActionButton: FloatingActionButton(
           heroTag: "report_btn",
           backgroundColor: AppColors.primaryBlue,

@@ -9,6 +9,7 @@ import 'package:tcc_alagouai/features/report/services/report_service.dart';
 
 class SafeRouteResult {
   final List<LatLng> points;
+  final String encodedPolyline;
   final String distance;
   final String duration;
   final int floodsCrossed;
@@ -18,6 +19,7 @@ class SafeRouteResult {
 
   SafeRouteResult({
     required this.points,
+    required this.encodedPolyline,
     required this.distance,
     required this.duration,
     required this.floodsCrossed,
@@ -177,12 +179,12 @@ class RouteService {
       String bestDuration = "";
       int bestFloodsHit = 0;
       LatLng? worstFloodHit;
+      String bestPolyline = "";
 
       for (var route in routes) {
         double baseDistance = (route['legs'][0]['distance']['value']).toDouble();
         String currentDistanceText = route['legs'][0]['distance']['text'];
         String currentDurationText = route['legs'][0]['duration']['text'];
-
         String encodedPolyline = route['overview_polyline']['points'];
         List<PointLatLng> decodedPoints = PolylinePoints.decodePolyline(encodedPolyline);
         List<LatLng> currentRouteCoords = decodedPoints.map((p) => LatLng(p.latitude, p.longitude)).toList();
@@ -237,11 +239,13 @@ class RouteService {
           bestDuration = currentDurationText;
           bestFloodsHit = floodsHit.length;
           worstFloodHit = localWorstFlood;
+          bestPolyline = encodedPolyline;
         }
       }
 
       return SafeRouteResult(
         points: bestRoute,
+        encodedPolyline: bestPolyline,
         distance: bestDistance,
         duration: bestDuration,
         floodsCrossed: bestFloodsHit,

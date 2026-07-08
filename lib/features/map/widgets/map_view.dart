@@ -38,7 +38,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   Position? _currentPosition;
 
   final RouteSimulator _simulator = RouteSimulator();
-  final bool _isSimulating = true;
+  final bool _isSimulating = false;
 
   double _lastValidHeading = 0.0;
   bool _isFinishingRoute = false;
