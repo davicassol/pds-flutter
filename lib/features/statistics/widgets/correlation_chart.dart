@@ -101,6 +101,7 @@ class CorrelationChart extends StatelessWidget {
       bottomTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
+          interval: 1,
           getTitlesWidget: (value, meta) {
             const days = ['7d', '6d', '5d', '4d', '3d', '2d', 'Ontem', 'Hoje'];
             if (value.toInt() >= 0 && value.toInt() < days.length) {
